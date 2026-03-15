@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
 # 1. Configurazione Pagina
-st.set_page_config(page_title="Borello Shopping", page_icon="🛒", layout="centered")
+st.set_page_config(page_title="Borello Shopping", page_icon="icona_spesa.png", layout="centered")
 
 # 2. CSS per Mobile (Pulsanti grandi e icone leggibili)
 st.markdown("""
@@ -12,8 +12,8 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+st.image("icona_spesa.png", width=100)
 st.title("🛒 Lista Spesa Borello")
-
 # 3. Connessione ai Dati
 conn = st.connection("gsheets", type=GSheetsConnection)
 df = conn.read(worksheet="Catalogo")
