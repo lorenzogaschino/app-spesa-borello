@@ -2,56 +2,81 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
-# 1. Configurazione Pagina
-st.set_page_config(page_title="Borello Shopping", page_icon="icona_spesa.png", layout="centered")
+# --- CONFIGURAZIONE PAGINA ---
+st.set_page_config(page_title="Borello Smart Shopping", page_icon="icona_spesa.png", layout="centered")
 
-# CSS per uno stile pulito e leggibile su mobile
+# CSS Personalizzato per i colori Borello e icone
 st.markdown("""
     <style>
-    .stCheckbox { font-size: 1.2rem !important; padding: 5px 0; }
-    h3 { color: #4b5320; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 20px; }
-    .stPopover button { background-color: transparent; border: none; padding: 0; }
+    .stApp { background-color: #f9f9f9; }
+    h1, h2, h3 { color: #4b5320; }
+    .stButton>button { width: 100%; border-radius: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.image("icona_spesa.png", width=80)
-st.title("🛒 Lista Spesa Borello")
-
-# 2. Connessione ai Dati
+# --- CONNESSIONE DATI ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Lettura del foglio "Catalogo"
-df = conn.read(worksheet="Catalogo")
-
-# Pulizia: rimuoviamo le righe dove la colonna 'Prodotto' è vuota
-if 'Prodotto' in df.columns:
+def load_data():
+    # Carica il catalogo e assicura che le colonne extra esistano
+    df = conn.read(worksheet="Catalogo")
     df = df.dropna(subset=['Prodotto'])
-    
-    if df.empty:
-        st.info("Il catalogo è vuoto. Aggiungi prodotti su Google Sheets!")
-    else:
-        # Raggruppiamo i prodotti per Corsia
-        for corsia in sorted(df['Corsia'].unique().astype(str)):
-            nome_corsia = corsia if corsia != "nan" else "Altro"
-            st.subheader(f"📍 {nome_corsia}")
-            
-            prod_corsia = df[df['Corsia'].astype(str) == corsia]
-            
-            for index, row in prod_corsia.iterrows():
-                col_check, col_info = st.columns([0.85, 0.15])
-                
-                with col_check:
-                    # Visualizza il nome del prodotto
-                    st.checkbox(f"{row['Prodotto']}", key=f"p_{index}")
-                
-                with col_info:
-                    # Se esiste un URL foto valido, mostra l'icona
-                    url_foto = str(row['URL_Foto'])
-                    if url_foto.startswith("http"):
-                        with st.popover("🖼️"):
-                            st.image(url_foto, caption=row['Prodotto'])
-else:
-    st.error("Errore: La colonna 'Prodotto' non è stata trovata nel foglio Google.")
+    for col in ['Stato', 'User', 'Tipo']:
+        if col not in df.columns:
+            df[col] = ""
+    return df
 
-st.divider()
-st.caption("Progetto Spesa Smart - Borello")
+df = load_data()
+
+# --- NAVIGAZIONE LATERALE ---
+with st.sidebar:
+    st.image("icona_spesa.png", width=100)
+    st.title("Menu")
+    scelta = st.radio("Dove vuoi andare?", ["🏠 A CASA", "🛒 BORELLO", "📦 PRODOTTI"])
+    
+    st.divider()
+    # Selezione Utente (per sapere chi aggiunge i prodotti)
+    utente = st.selectbox("Chi sei?", ["Lorenzo", "Maria", "Ospite"])
+    icone_utenti = {"Lorenzo": "🧔‍♂️", "Maria": "👩‍🦰", "Ospite": "👤"}
+
+# --- SEZIONE 3: PRODOTTI (Catalogo Completo) ---
+if scelta == "📦 PRODOTTI":
+    st.header("📦 Database Prodotti")
+    st.write("Qui puoi consultare tutto il catalogo Borello.")
+    
+    # Ricerca rapida
+    search = st.text_input("Cerca un prodotto nel catalogo...", "")
+    
+    # Filtro e ordinamento per Corsia
+    df_sorted = df.sort_values(by="Corsia")
+    if search:
+        df_sorted = df_sorted[df_sorted['Prodotto'].str.contains(search, case=False)]
+
+    for corsia in df_sorted['Corsia'].unique():
+        with st.expander(f"📍 Corsia: {corsia}", expanded=True):
+            items = df_sorted[df_sorted['Corsia'] == corsia]
+            for _, row in items.iterrows():
+                col1, col2, col3 = st.columns([0.15, 0.65, 0.2])
+                with col1:
+                    # Mini anteprima foto
+                    if pd.notna(row['URL_Foto']) and str(row['URL_Foto']).startswith("http"):
+                        st.image(row['URL_Foto'], width=50)
+                with col2:
+                    st.write(f"**{row['Prodotto']}**")
+                with col3:
+                    # Tasto rapido per aggiungere alla lista (Logica A CASA)
+                    if st.button("➕", key=f"add_{row['ID']}"):
+                        st.toast(f"{row['Prodotto']} aggiunto!")
+                        # Qui aggiungeremo la logica per scrivere sul foglio Google
+
+# --- SEZIONE 1: A CASA (Placeholder) ---
+elif scelta == "🏠 A CASA":
+    st.header("🏠 Crea la tua Lista")
+    st.info("Seleziona i prodotti dal menu PRODOTTI o usa la ricerca qui sotto.")
+    # Svilupperemo questa parte nel prossimo step
+
+# --- SEZIONE 2: BORELLO (Placeholder) ---
+elif scelta == "🛒 BORELLO":
+    st.header("🛒 Shopping Mode")
+    st.write(f"Ciao {utente}, sei pronto per la spesa?")
+    # Svilupperemo questa parte nel prossimo step
