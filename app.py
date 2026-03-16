@@ -2,81 +2,93 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
-# --- CONFIGURAZIONE PAGINA ---
-st.set_page_config(page_title="Borello Smart Shopping", page_icon="icona_spesa.png", layout="centered")
+# 1. Configurazione Pagina (Mobile First)
+st.set_page_config(page_title="Borello Smart", page_icon="icona_spesa.png", layout="wide")
 
-# CSS Personalizzato per i colori Borello e icone
+# CSS per menu orizzontale e stile mobile
 st.markdown("""
     <style>
-    .stApp { background-color: #f9f9f9; }
-    h1, h2, h3 { color: #4b5320; }
-    .stButton>button { width: 100%; border-radius: 10px; }
+    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+    .stTabs [data-baseweb="tab"] { 
+        height: 50px; white-space: pre-wrap; background-color: #f0f2f6; 
+        border-radius: 10px 10px 0 0; padding: 10px; flex-grow: 1;
+    }
+    .stTabs [aria-selected="true"] { background-color: #4b5320 !important; color: white !important; }
+    .stButton>button { width: 100%; border-radius: 10px; height: 3em; }
+    [data-testid="stImage"] img { border-radius: 8px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- CONNESSIONE DATI ---
+# 2. Connessione Dati
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def load_data():
-    # Carica il catalogo e assicura che le colonne extra esistano
     df = conn.read(worksheet="Catalogo")
     df = df.dropna(subset=['Prodotto'])
+    # RISOLUZIONE ERRORE: Trasforma tutto in testo per poter ordinare
+    df['Corsia'] = df['Corsia'].astype(str)
     for col in ['Stato', 'User', 'Tipo']:
-        if col not in df.columns:
-            df[col] = ""
+        if col not in df.columns: df[col] = ""
     return df
 
 df = load_data()
 
-# --- NAVIGAZIONE LATERALE ---
-with st.sidebar:
-    st.image("icona_spesa.png", width=100)
-    st.title("Menu")
-    scelta = st.radio("Dove vuoi andare?", ["🏠 A CASA", "🛒 BORELLO", "📦 PRODOTTI"])
-    
-    st.divider()
-    # Selezione Utente (per sapere chi aggiunge i prodotti)
-    utente = st.selectbox("Chi sei?", ["Lorenzo", "Maria", "Ospite"])
-    icone_utenti = {"Lorenzo": "🧔‍♂️", "Maria": "👩‍🦰", "Ospite": "👤"}
+# 3. Header e Selezione Utente
+col_logo, col_user = st.columns([0.3, 0.7])
+with col_logo:
+    st.image("icona_spesa.png", width=60)
+with col_user:
+    utente = st.selectbox("Utente:", ["Lorenzo", "Maria"], label_visibility="collapsed")
 
-# --- SEZIONE 3: PRODOTTI (Catalogo Completo) ---
-if scelta == "📦 PRODOTTI":
-    st.header("📦 Database Prodotti")
-    st.write("Qui puoi consultare tutto il catalogo Borello.")
+# 4. MENU ORIZZONTALE (Tabs)
+tab1, tab2, tab3 = st.tabs(["🏠 CASA", "🛒 BORELLO", "📦 PRODOTTI"])
+
+# --- TAB 3: PRODOTTI (DATABASE) ---
+with tab3:
+    st.subheader("📦 Catalogo")
+    search = st.text_input("Cerca prodotto...", placeholder="es: Broccoli")
     
-    # Ricerca rapida
-    search = st.text_input("Cerca un prodotto nel catalogo...", "")
-    
-    # Filtro e ordinamento per Corsia
     df_sorted = df.sort_values(by="Corsia")
     if search:
         df_sorted = df_sorted[df_sorted['Prodotto'].str.contains(search, case=False)]
 
-    for corsia in df_sorted['Corsia'].unique():
-        with st.expander(f"📍 Corsia: {corsia}", expanded=True):
+    for corsia in sorted(df_sorted['Corsia'].unique()):
+        with st.expander(f"📍 Corsia {corsia}", expanded=False):
             items = df_sorted[df_sorted['Corsia'] == corsia]
-            for _, row in items.iterrows():
-                col1, col2, col3 = st.columns([0.15, 0.65, 0.2])
-                with col1:
-                    # Mini anteprima foto
+            for idx, row in items.iterrows():
+                c1, c2, c3 = st.columns([0.2, 0.5, 0.3])
+                with c1:
                     if pd.notna(row['URL_Foto']) and str(row['URL_Foto']).startswith("http"):
                         st.image(row['URL_Foto'], width=50)
-                with col2:
+                with c2:
                     st.write(f"**{row['Prodotto']}**")
-                with col3:
-                    # Tasto rapido per aggiungere alla lista (Logica A CASA)
-                    if st.button("➕", key=f"add_{row['ID']}"):
-                        st.toast(f"{row['Prodotto']} aggiunto!")
-                        # Qui aggiungeremo la logica per scrivere sul foglio Google
+                with c3:
+                    if st.button("➕", key=f"add_{idx}"):
+                        # LOGICA AGGIUNTA: scrive sul DataFrame e aggiorna Google Sheets
+                        df.at[idx, 'Stato'] = "DA COMPRARE"
+                        df.at[idx, 'User'] = utente
+                        df.at[idx, 'Tipo'] = "Pianificato"
+                        conn.update(worksheet="Catalogo", data=df)
+                        st.toast(f"Aggiunto: {row['Prodotto']}!")
 
-# --- SEZIONE 1: A CASA (Placeholder) ---
-elif scelta == "🏠 A CASA":
-    st.header("🏠 Crea la tua Lista")
-    st.info("Seleziona i prodotti dal menu PRODOTTI o usa la ricerca qui sotto.")
-    # Svilupperemo questa parte nel prossimo step
+# --- TAB 1: A CASA (LISTA IN PREPARAZIONE) ---
+with tab1:
+    st.subheader("📝 Lista da preparare")
+    lista_casa = df[df['Stato'] == "DA COMPRARE"]
+    
+    if lista_casa.empty:
+        st.info("La lista è vuota. Vai in PRODOTTI per aggiungere.")
+    else:
+        for idx, row in lista_casa.iterrows():
+            st.write(f"✅ {row['Prodotto']} (Aggiunto da: {row['User']})")
+        
+        if st.button("🗑️ Svuota tutto"):
+            df['Stato'] = ""
+            conn.update(worksheet="Catalogo", data=df)
+            st.rerun()
 
-# --- SEZIONE 2: BORELLO (Placeholder) ---
-elif scelta == "🛒 BORELLO":
-    st.header("🛒 Shopping Mode")
-    st.write(f"Ciao {utente}, sei pronto per la spesa?")
-    # Svilupperemo questa parte nel prossimo step
+# --- TAB 2: BORELLO (SHOPPING MODE) ---
+with tab2:
+    st.subheader("🛒 Al Supermercato")
+    # Qui implementeremo la logica della spunta definitiva
+    st.write("Prossimamente: Spunta i prodotti mentre compri!")
