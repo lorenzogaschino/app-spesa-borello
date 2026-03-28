@@ -53,6 +53,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Crea le schede (Tab) prima di usarle
+tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
+
 # --- TAB 3: CATALOGO ---
 with tab3:
     st.write("## 📦 Catalogo")
