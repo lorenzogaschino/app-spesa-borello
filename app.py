@@ -6,17 +6,21 @@ from streamlit_gsheets import GSheetsConnection
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
 # CSS Migliorato per Mobile
-# 1. Configurazione Pagina (Righe 9-20 aggiornate)
-st.markdown("""
-    <style>
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
-    .stTabs [data-baseweb="tab"] { 
-        height: 45px; background-color: #f0f2f6; 
-        border-radius: 10px; flex-grow: 1; font-size: 14px;
-    }
-    .stTabs [aria-selected="true"] { background-color: #4b5320 !important; color: white !important; }
-    .stButton>button { width: 100%; border-radius: 10px; }
-    div[data-testid="stExpander"] { border: none; background: #fafafa; border-radius: 10px; margin-bottom: 5px; }
+/* Inserisci questo nel blocco <style> all'inizio */
+[data-testid="column"] {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 0px !important; /* Impedisce alle colonne di collassare */
+}
+
+/* Forza le colonne a stare sulla stessa riga anche su mobile */
+[data-testid="stHorizontalBlock"] {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+}
     
     /* NUOVE REGOLE V1.1 */
     .stToast {
