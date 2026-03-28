@@ -6,6 +6,7 @@ from streamlit_gsheets import GSheetsConnection
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
 # CSS Migliorato per Mobile
+# 1. Configurazione Pagina (Righe 9-20 aggiornate)
 st.markdown("""
     <style>
     .stTabs [data-baseweb="tab-list"] { gap: 8px; }
@@ -16,6 +17,20 @@ st.markdown("""
     .stTabs [aria-selected="true"] { background-color: #4b5320 !important; color: white !important; }
     .stButton>button { width: 100%; border-radius: 10px; }
     div[data-testid="stExpander"] { border: none; background: #fafafa; border-radius: 10px; margin-bottom: 5px; }
+    
+    /* NUOVE REGOLE V1.1 */
+    .stToast {
+        background-color: #2e7d32 !important;
+        color: white !important;
+    }
+    [data-testid="stToast"] {
+        width: 100% !important; /* Su mobile 150% potrebbe uscire dallo schermo, 100% è più sicuro */
+    }
+    .product-name {
+        font-size: 18px !important;
+        font-weight: 600 !important;
+        margin-bottom: 0px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -56,47 +71,58 @@ with col_user:
 # 4. MENU TABS
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
-# --- TAB 3: CATALOGO (DATABASE PRODOTTI) ---
+# --- TAB 3: CATALOGO (VERSIONE 1.1) ---
 with tab3:
     st.subheader("📦 Catalogo Prodotti")
     
-    # Campo di ricerca
-    search = st.text_input("Cerca nel database...", placeholder="Es: Mele, Pasta...", key="catalog_search")
+    search = st.text_input("Cerca nel database...", placeholder="Es: Pasta...", key="catalog_search_v1")
     
-    # Filtriamo il DF per escludere i prodotti aggiunti "Manualmente" (opzionale)
-    # e applichiamo la ricerca se presente
-    df_cat = st.session_state.df.copy()
+    # 1. Preparazione dati: Alfabetico e solo prodotti Catalogo
+    df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy()
+    df_cat = df_cat.sort_values(by="Prodotto")
+    
     if search:
         df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
 
-    # Ciclo per Corsia
-    corsie_disponibili = sorted(df_cat['Corsia'].unique())
-    
-    for corsia in corsie_disponibili:
-        with st.expander(f"📍 Corsia {corsia}", expanded=search != ""):
-            items = df_cat[df_cat['Corsia'] == corsia]
+    st.divider()
+
+    # 2. Visualizzazione a lista continua
+    for idx, row in df_cat.iterrows():
+        # Verifichiamo se il prodotto è già stato selezionato
+        is_in_list = row['Stato'] == "DA COMPRARE"
+        
+        # Container con stile condizionale (grigetto se già in lista)
+        with st.container():
+            c_info, c_img, c_btn = st.columns([0.65, 0.15, 0.2])
             
-            for idx, row in items.iterrows():
-                c_img, c_name, c_btn = st.columns([0.15, 0.65, 0.2])
-                
-                with c_img:
-                    # Gestione icone/immagini per evitare errori di caricamento
-                    url = row.get('URL_Foto', "")
-                    if pd.notna(url) and str(url).startswith("http"):
-                        st.image(url, width=40)
-                    else:
-                        st.write("📦") # Icona di fallback se non c'è foto
-                
-                with c_name:
-                    st.write(f"**{row['Prodotto']}**")
-                
-                with c_btn:
-                    # Il tasto che ha generato l'errore: ora usa save()
-                    if st.button("➕", key=f"cat_add_{idx}"):
+            with c_info:
+                if is_in_list:
+                    # Testo grigio e sbarrato/opaco per indicare che c'è già
+                    st.markdown(f"<p style='color: #a0a0a0; font-size: 18px;'>{row['Prodotto']} (In Lista)</p>", unsafe_allow_html=True)
+                else:
+                    # Testo standard grande
+                    st.markdown(f"<p class='product-name'>{row['Prodotto']}</p>", unsafe_allow_html=True)
+                st.caption(f"📍 Corsia {row['Corsia']}")
+            
+            with c_img:
+                url = row.get('URL_Foto', "")
+                if pd.notna(url) and str(url).startswith("http"):
+                    st.image(url, width=50)
+                else:
+                    st.write("📦")
+            
+            with c_btn:
+                if is_in_list:
+                    # Icona carrello a destra (disabilitata)
+                    st.button("🛒", key=f"btn_in_{idx}", disabled=True)
+                else:
+                    # Bottone attivo per aggiungere
+                    if st.button("➕", key=f"btn_add_{idx}"):
                         st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
                         st.session_state.df.at[idx, 'User'] = utente
-                        save() # <--- Chiamata corretta alla riga 34
-                        st.toast(f"Aggiunto: {row['Prodotto']}")
+                        save()
+                        st.toast(f"✅ AGGIUNTO: {row['Prodotto']}")
+                        st.rerun() # Ricarica per aggiornare l'aspetto (grigetto)
 
 # --- TAB 1: LISTA (PIANIFICAZIONE CASA) ---
 with tab1:
