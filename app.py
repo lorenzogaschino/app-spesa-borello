@@ -106,31 +106,54 @@ with tab1:
 # --- TAB 2: SPESA (IN NEGOZIO)          ---
 # ==========================================
 with tab2:
-    st.subheader("🛒 Al Supermercato")
+    st.subheader("🛒 Spesa in corso")
     
     if 'df' in st.session_state:
-        # Mostriamo i prodotti da prendere, ordinati per CORSIA
+        # Filtriamo i prodotti da prendere e li ordiniamo per Corsia
         df_spesa = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy()
         df_spesa = df_spesa.sort_values("Corsia")
 
         if df_spesa.empty:
             st.success("Tutto preso! Carrello pieno. 🎉")
         else:
-            st.info("Clicca sul prodotto quando lo metti nel carrello.")
+            st.info("Tocca il prodotto per metterlo nel carrello")
+            
             for idx, row in df_spesa.iterrows():
-                # Bottoni grandi per essere cliccati facilmente col pollice (Chiave univoca S_)
-                if st.button(f"{row['Corsia']} - {row['Prodotto']}", key=f"S_check_{idx}", use_container_width=True):
-                    st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
-                    save()
-                    st.rerun()
-        
-        st.divider()
-        if st.button("🏁 Ho finito la spesa (Svuota tutto)", key="k_empty_all", type="primary", use_container_width=True):
-            st.session_state.df.loc[st.session_state.df['Stato'] == "DA COMPRARE", 'Stato'] = ""
-            st.session_state.df.loc[st.session_state.df['Stato'] == "NEL CARRELLO", 'Stato'] = ""
-            st.session_state.df = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].reset_index(drop=True)
-            save()
-            st.rerun()
+                with st.container():
+                    # Usiamo la stessa classe CSS 'cat-row' per coerenza
+                    st.markdown('<div class="cat-row">', unsafe_allow_html=True)
+                    
+                    col_info, col_img = st.columns([0.7, 0.3])
+                    
+                    with col_info:
+                        st.markdown(f'<span class="cat-name">{row["Prodotto"]}</span>', unsafe_allow_html=True)
+                        st.markdown(f'<span class="cat-cap">📍 Corsia: {row["Corsia"]}</span>', unsafe_allow_html=True)
+                        # Mostriamo chi lo ha chiesto anche qui, utile se ci sono dubbi
+                        st.caption(f"👤 Per: {row.get('User', 'Casa')}")
+                    
+                    with col_img:
+                        url = row.get('URL_Foto', "")
+                        if pd.notna(url) and str(url).startswith("http"):
+                            st.markdown(f'<img src="{url}" class="cat-img">', unsafe_allow_html=True)
+                    
+                    # Tasto di "Spunta" (Sposta nel carrello)
+                    if st.button(f"✅ PRESO!", key=f"S_check_{idx}", use_container_width=True):
+                        st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
+                        save()
+                        st.rerun()
+                    
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.divider()
+
+        # Bottone finale per svuotare tutto a fine spesa
+        if not st.session_state.df[st.session_state.df['Stato'].isin(["DA COMPRARE", "NEL CARRELLO"])].empty:
+            st.write("")
+            if st.button("🏁 HO FINITO LA SPESA", key="k_reset_spesa", type="primary", use_container_width=True):
+                # Reset stati e rimozione manuali
+                st.session_state.df.loc[st.session_state.df['Stato'].isin(["DA COMPRARE", "NEL CARRELLO"]), 'Stato'] = ""
+                st.session_state.df = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].reset_index(drop=True)
+                save()
+                st.rerun()
 
 # ==========================================
 # --- TAB 3: CATALOGO PRODOTTI           ---
