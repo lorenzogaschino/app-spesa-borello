@@ -206,49 +206,52 @@ with tab1:
                     "Tipo": "Manuale", 
                     "URL_Foto": ""
                 }])
+                # Concateniamo e resettiamo l'indice per evitare duplicati
                 st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
-                save() # <--- Chiamata corretta riga 34
+                save() 
                 st.rerun()
 
     st.divider()
 
     # 2. VISUALIZZAZIONE E EDIT DELLA LISTA
-    # Filtriamo solo i prodotti selezionati
-    lista_edit = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"]
-    
-    if lista_edit.empty:
-        st.info("La tua lista è vuota. Aggiungi qualcosa qui sopra o dal Catalogo!")
-    else:
-        for idx, row in lista_edit.iterrows():
-            with st.container(border=True):
-                col_info, col_del = st.columns([0.8, 0.2])
-                
-                with col_info:
-                    st.write(f"**{row['Prodotto']}**")
-                    st.caption(f"👤 {row['User']} | 📍 Corsia: {row['Corsia']}")
-                
-                with col_del:
-                    # Tasto per rimuovere dalla lista
-                    if st.button("❌", key=f"remove_{idx}"):
-                        if row.get('Tipo') == "Manuale":
-                            # Se è manuale, lo eliminiamo fisicamente dal DF
-                            st.session_state.df = st.session_state.df.drop(idx).reset_index(drop=True)
-                        else:
-                            # Se è da catalogo, resettiamo solo lo stato
-                            st.session_state.df.at[idx, 'Stato'] = ""
-                        
-                        save() # <--- Chiamata corretta riga 34
-                        st.rerun()
+    if 'df' in st.session_state:
+        # Filtriamo solo i prodotti selezionati (usiamo .index per sicurezza)
+        lista_edit = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"]
         
-        # 3. AZIONI MASSIVE
-        st.write("") # Spaziatore
-        if st.button("🗑️ Svuota tutta la lista", type="secondary"):
-            # Resetta lo stato di tutti i prodotti
-            st.session_state.df['Stato'] = ""
-            # Elimina i prodotti manuali per non sporcare il DB a lungo termine
-            st.session_state.df = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].reset_index(drop=True)
-            save()
-            st.rerun()
+        if lista_edit.empty:
+            st.info("La tua lista è vuota. Aggiungi qualcosa qui sopra o dal Catalogo!")
+        else:
+            for idx, row in lista_edit.iterrows():
+                # Usiamo un border per separare bene i prodotti su mobile
+                with st.container(border=True):
+                    col_info, col_del = st.columns([0.8, 0.2])
+                    
+                    with col_info:
+                        st.write(f"**{row['Prodotto']}**")
+                        st.caption(f"👤 {row['User']} | 📍 Corsia: {row['Corsia']}")
+                    
+                    with col_del:
+                        # Tasto per rimuovere dalla lista
+                        if st.button("❌", key=f"remove_{idx}"):
+                            if row.get('Tipo') == "Manuale":
+                                # Se è manuale, lo eliminiamo fisicamente
+                                st.session_state.df = st.session_state.df.drop(idx).reset_index(drop=True)
+                            else:
+                                # Se è da catalogo, resettiamo solo lo stato
+                                st.session_state.df.at[idx, 'Stato'] = ""
+                            
+                            save()
+                            st.rerun()
+            
+            # 3. AZIONI MASSIVE
+            st.write("") # Spaziatore
+            if st.button("🗑️ Svuota tutta la lista", type="secondary", use_container_width=True):
+                # 1. Resetta lo stato di quelli da catalogo
+                st.session_state.df.loc[st.session_state.df['Stato'] == "DA COMPRARE", 'Stato'] = ""
+                # 2. Elimina i prodotti manuali
+                st.session_state.df = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].reset_index(drop=True)
+                save()
+                st.rerun()
 
 # --- TAB 2: SPESA (MODIFICHE PUNTUALI) ---
 with tab2:
