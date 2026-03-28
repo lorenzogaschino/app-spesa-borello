@@ -31,7 +31,9 @@ if 'df' not in st.session_state:
         if col not in raw_df.columns: raw_df[col] = ""
     st.session_state.df = raw_df
 
-def save_to_gsheets():
+def save():
+    # Pulizia minima per evitare errori di celle vuote nel DB
+    st.session_state.df['Prodotto'] = st.session_state.df['Prodotto'].fillna("Senza Nome")
     conn.update(worksheet="Catalogo", data=st.session_state.df)
 
 # 3. Header
@@ -70,39 +72,79 @@ with tab3:
                         save_to_gsheets()
                         st.toast(f"{row['Prodotto']} aggiunto!")
 
-# --- TAB 1: LISTA (Cosa manca a casa) ---
+# --- TAB 1: LISTA (MODIFICHE PUNTUALI) ---
 with tab1:
-    st.subheader("📝 Da comprare")
-    lista_casa = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"]
+    st.subheader("📝 Lista della Spesa")
     
-    if lista_casa.empty:
-        st.info("La lista è vuota.")
-    else:
-        for idx, row in lista_casa.iterrows():
-            st.write(f"• **{row['Prodotto']}** (da: {row['User']})")
-        
-        if st.button("🗑️ Svuota Lista"):
-            st.session_state.df['Stato'] = ""
-            save_to_gsheets()
-            st.rerun()
+    # Inserimento rapido
+    with st.expander("➕ Aggiungi al volo", expanded=False):
+        c_n, c_c = st.columns([0.6, 0.4])
+        nuovo_p = c_n.text_input("Cosa manca?", key="new_p_input")
+        corsia_p = c_c.selectbox("Corsia", ["?", "1", "2", "3", "4", "5", "FRESCHI", "SURGELATI"], key="new_p_corsia")
+        if st.button("Inserisci in lista", use_container_width=True):
+            if nuovo_p:
+                new_row = pd.DataFrame([{
+                    "Prodotto": nuovo_p, "Corsia": corsia_p, "Stato": "DA COMPRARE", 
+                    "User": utente, "Tipo": "Manuale", "URL_Foto": ""
+                }])
+                st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
+                save()
+                st.rerun()
 
-# --- TAB 2: SPESA (In negozio) ---
+    st.divider()
+
+    # Visualizzazione e Edit rapido
+    lista_edit = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"]
+    
+    if lista_edit.empty:
+        st.info("Lista vuota.")
+    else:
+        for idx, row in lista_edit.iterrows():
+            with st.container(border=True):
+                col_info, col_actions = st.columns([0.7, 0.3])
+                with col_info:
+                    st.write(f"**{row['Prodotto']}**")
+                    # Edit rapido della corsia se necessario
+                    nuova_corsia = st.selectbox(f"Sposta C.", ["?", "1", "2", "3", "4", "5", "F.", "S."], 
+                                              index=0, key=f"edit_c_{idx}", label_visibility="collapsed")
+                    if nuova_corsia != row['Corsia'] and nuova_corsia != "Sposta C.":
+                        st.session_state.df.at[idx, 'Corsia'] = nuova_corsia
+                        save()
+                        st.rerun()
+                with col_actions:
+                    if st.button("❌", key=f"del_{idx}"):
+                        if row['Tipo'] == "Manuale":
+                            st.session_state.df = st.session_state.df.drop(idx).reset_index(drop=True)
+                        else:
+                            st.session_state.df.at[idx, 'Stato'] = ""
+                        save()
+                        st.rerun()
+
+# --- TAB 2: SPESA (MODIFICHE PUNTUALI) ---
 with tab2:
-    st.subheader("🛒 Nel Carrello")
-    # Filtriamo solo i prodotti da comprare, ordinati per corsia (logica del percorso nel supermercato)
-    spesa_df = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].sort_values("Corsia")
+    st.subheader("🛒 Al Supermercato")
+    
+    # Ordinamento rigoroso per corsia per ottimizzare il percorso a piedi
+    spesa_df = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].sort_values(by="Corsia")
     
     if spesa_df.empty:
-        st.success("Tutto preso! 🎉")
+        st.balloons()
+        st.success("Tutto preso! Goditi il tempo libero 🍷")
     else:
+        # Progress bar per dare soddisfazione
+        total = len(spesa_df)
+        st.caption(f"Mancano {total} prodotti")
+        
         for idx, row in spesa_df.iterrows():
-            c_check, c_text = st.columns([0.2, 0.8])
-            with c_check:
-                # Se premuto, il prodotto viene segnato come COMPRATO (Stato vuoto)
-                if st.button("✅", key=f"buy_{idx}"):
+            # Container cliccabile largo per facilitare l'uso con i guanti o in movimento
+            with st.container(border=True):
+                c_check, c_name = st.columns([0.25, 0.75])
+                if c_check.button("✅", key=f"buy_{idx}", use_container_width=True):
                     st.session_state.df.at[idx, 'Stato'] = "PRESO"
-                    save_to_gsheets()
+                    # Qui potremmo decidere di non salvare su Sheets ogni singolo click 
+                    # per velocità, ma per sicurezza lo manteniamo
+                    save()
                     st.rerun()
-            with c_text:
-                st.write(f"**{row['Prodotto']}**")
-                st.caption(f"Corsia {row['Corsia']}")
+                with c_name:
+                    st.write(f"**{row['Prodotto']}**")
+                    st.caption(f"📍 Corsia {row['Corsia']} | 👤 {row['User']}")
