@@ -6,7 +6,6 @@ from streamlit_gsheets import GSheetsConnection
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
 # CSS Migliorato per Mobile
-/* Inserisci questo nel blocco <style> all'inizio */
 [data-testid="column"] {
     display: flex;
     align-items: center;
@@ -14,7 +13,6 @@ st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
     min-width: 0px !important; /* Impedisce alle colonne di collassare */
 }
 
-/* Forza le colonne a stare sulla stessa riga anche su mobile */
 [data-testid="stHorizontalBlock"] {
     display: flex !important;
     flex-direction: row !important;
