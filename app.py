@@ -5,86 +5,52 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Configurazione Pagina (Inizio file)
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 # --- 1. CONFIGURAZIONE E CSS (Sostituisce righe 8-97) ---
+# --- 1. CONFIGURAZIONE E CSS AGGIORNATO ---
 st.markdown("""
 <style>
-    /* Reset margini per massimizzare lo spazio su mobile */
-    .stMainBlockContainer { 
-        padding: 0.5rem !important; 
-        overflow-x: hidden !important; 
-    }
-    
-    /* TABELLA BLINDATA: Impedisce lo scroll orizzontale */
-    .cat-table {
-        width: 100%;
-        border-collapse: collapse;
-        table-layout: fixed; /* Fondamentale: blocca le larghezze */
-    }
-    
-    .cat-td-txt { width: 65%; padding: 2px; vertical-align: middle; }
-    .cat-td-img { width: 18%; text-align: center; padding: 2px; vertical-align: middle; }
-    .cat-td-btn { width: 17%; text-align: right; padding: 2px; vertical-align: middle; }
+    .stMainBlockContainer { padding: 1rem !important; }
 
-    /* Testo Prodotto: Tronca se troppo lungo */
-    .product-name {
-        font-size: 14px !important;
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: block;
+    /* Nome Prodotto: Dimensioni raddoppiate */
+    .product-name-large {
+        font-size: 28px !important;  /* Font molto grande */
+        font-weight: 800 !important;
         line-height: 1.2;
-    }
-    .product-cap { font-size: 11px; color: gray; display: block; }
-
-    /* Immagine: Quadrata e fissa */
-    .cat-img {
-        width: 38px !important;
-        height: 38px !important;
-        object-fit: cover;
-        border-radius: 6px;
-        border: 1px solid #eee;
-    }
-
-    /* Bottone: Quadrato perfetto e allineato */
-    .stButton>button {
-        width: 35px !important;
-        height: 35px !important;
-        padding: 0px !important;
-        min-width: 35px !important;
-        border-radius: 8px !important;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        color: #111111;
+        display: block;
     }
     
-    /* Tab e Toast */
-    .stTabs [data-baseweb="tab"] { height: 40px; font-size: 12px; }
-    [data-testid="stToast"] { background-color: #2e7d32 !important; color: white !important; }
+    /* Info Corsia */
+    .product-cap-large { 
+        font-size: 18px !important; 
+        color: #666666; 
+        margin-bottom: 5px;
+    }
+
+    /* Immagine: Raddoppiata */
+    .cat-img-large {
+        width: 80px !important; 
+        height: 80px !important;
+        object-fit: cover;
+        border-radius: 12px;
+        border: 1px solid #ddd;
+    }
+
+    /* Bottone + : Grande e facile da cliccare */
+    .stButton>button {
+        width: 100% !important; /* Occupa tutta la larghezza per essere cliccato bene */
+        height: 60px !important;
+        font-size: 25px !important;
+        border-radius: 15px !important;
+        background-color: #f8f9fa !important;
+        border: 2px solid #eee !important;
+        margin-top: 5px;
+        margin-bottom: 20px;
+    }
+
+    /* Divisore tra prodotti più marcato */
+    hr { margin: 15px 0 !important; border-top: 2px solid #eee !important; }
 </style>
 """, unsafe_allow_html=True)
-# 2. Connessione e Gestione Dati
-conn = st.connection("gsheets", type=GSheetsConnection)
-
-def save():
-    try:
-        data_to_save = st.session_state.df.copy()
-        conn.update(worksheet="Catalogo", data=data_to_save)
-    except Exception as e:
-        st.error(f"Errore salvataggio: {e}")
-
-if 'df' not in st.session_state:
-    try:
-        raw_df = conn.read(worksheet="Catalogo")
-        for col in ['Stato', 'User', 'Tipo', 'URL_Foto']:
-            if col not in raw_df.columns: raw_df[col] = ""
-        raw_df['Corsia'] = raw_df['Corsia'].astype(str).replace(['nan', 'None'], '?')
-        st.session_state.df = raw_df
-    except Exception:
-        st.error("Errore caricamento Database")
-
-# 3. Header e Navigazione
-utente = st.selectbox("Utente", ["Lorenzo", "Maria"], label_visibility="collapsed")
-tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
 # --- TAB 3: CATALOGO ---
 with tab3:
