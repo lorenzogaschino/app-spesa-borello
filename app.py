@@ -5,62 +5,54 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Configurazione Pagina
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
-# 1. Configurazione Pagina e CSS Ultra-Compatto per Mobile
+# 1. Configurazione Pagina e CSS Ultra-Compatto
 st.markdown("""
 <style>
-    /* 1. FORZA ORIZZONTALE E ELIMINA SCROLL */
+    /* FORZA ORIZZONTALE - Impedisce alle colonne di andare a capo */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
-        gap: 0.5rem !important; /* Spazio minimo tra colonne */
+        gap: 4px !important;
     }
 
-    /* 2. PROPORZIONI FISSE COLONNE */
     [data-testid="column"] {
-        width: auto !important;
-        flex-math: none !important;
-        flex-shrink: 1 !important;
         min-width: 0px !important;
+        flex-grow: 1 !important;
     }
 
-    /* 3. TOAST E TESTO */
-    [data-testid="stToast"] {
-        background-color: #2e7d32 !important;
-        color: white !important;
-    }
+    /* RIDUZIONE SPAZI - Per far stare tutto in larghezza */
+    .stMainBlockContainer { padding-left: 1rem; padding-right: 1rem; }
     
     .product-name {
-        font-size: 16px !important; /* Leggermente ridotto per stare in riga */
+        font-size: 15px !important; 
         font-weight: 600 !important;
-        line-height: 1.2;
+        line-height: 1.1;
         display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    /* 4. TAB E BOTTONI */
-    .stTabs [data-baseweb="tab-list"] { gap: 4px; }
-    .stTabs [data-baseweb="tab"] { 
-        height: 40px; border-radius: 8px; flex-grow: 1; font-size: 12px;
-    }
+    /* BOTTONI E TAB COMPATTI */
     .stButton>button { 
-        padding: 0px 5px !important; 
-        height: 35px !important;
+        padding: 0px !important; 
+        height: 35px !important; 
+        width: 35px !important;
         min-width: 35px !important;
     }
-</style>
-""", unsafe_allow_html=True)
-    /* NUOVE REGOLE V1.1: Toast e Font */
+    
+    .stTabs [data-baseweb="tab"] { 
+        height: 40px; border-radius: 8px; font-size: 12px; 
+    }
+    .stTabs [aria-selected="true"] { background-color: #4b5320 !important; color: white !important; }
+
+    /* TOAST VERDE */
     [data-testid="stToast"] {
         background-color: #2e7d32 !important;
         color: white !important;
         width: 100% !important;
-    }
-    
-    .product-name {
-        font-size: 18px !important;
-        font-weight: 600 !important;
-        margin-bottom: 0px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -102,47 +94,64 @@ with col_user:
 # 4. MENU TABS
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
-# --- TAB 3: CATALOGO (VERSIONE COMPATTA 1.1) ---
+# --- TAB 3: CATALOGO (VERSIONE 1.1 COMPATTA) ---
 with tab3:
     st.subheader("📦 Catalogo")
-    search = st.text_input("Cerca...", placeholder="Pasta...", key="cat_search_v1.1")
     
-    df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
+    # Campo di ricerca per trovare i prodotti velocemente
+    search = st.text_input("Cerca nel database...", placeholder="Es: Pasta, Mele...", key="catalog_search_final")
+    
+    # 1. Preparazione Dati: Filtriamo solo prodotti da catalogo e ordiniamo
+    # Usiamo una copia per non sporcare il dataframe principale durante i filtri
+    df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy()
+    df_cat = df_cat.sort_values(by="Prodotto")
+    
     if search:
         df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
 
     st.divider()
 
-  for idx, row in df_cat.iterrows():
-        is_in_list = row['Stato'] == "DA COMPRARE"
-        
-        with st.container():
-            # Proporzioni: 70% testo, 15% immagine, 15% bottone
-            c_info, c_img, c_btn = st.columns([0.65, 0.17, 0.18])
+    # 2. Ciclo di visualizzazione prodotti
+    if df_cat.empty:
+        st.info("Nessun prodotto trovato nel catalogo.")
+    else:
+        for idx, row in df_cat.iterrows():
+            # Controllo regressione: verifichiamo se è già in lista
+            is_in_list = row['Stato'] == "DA COMPRARE"
             
-            with c_info:
-                color = "#a0a0a0" if is_in_list else "#000000"
-                label = " (In Lista)" if is_in_list else ""
-                st.markdown(f"<span class='product-name' style='color:{color}'>{row['Prodotto']}{label}</span>", unsafe_allow_html=True)
-                st.caption(f"📍 {row['Corsia']}")
-            
-            with c_img:
-                url = row.get('URL_Foto', "")
-                if pd.notna(url) and str(url).startswith("http"):
-                    st.image(url, width=35) # Immagine più piccola
-                else:
-                    st.write("📦")
-            
-            with c_btn:
-                if is_in_list:
-                    st.button("🛒", key=f"btn_in_{idx}", disabled=True)
-                else:
-                    if st.button("➕", key=f"btn_add_{idx}"):
-                        st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
-                        st.session_state.df.at[idx, 'User'] = utente
-                        save()
-                        st.toast(f"✅ {row['Prodotto']} aggiunto!")
-                        st.rerun()
+            with st.container():
+                # Proporzioni 70/15/15 per incastrare tutto su mobile senza scroll
+                c_info, c_img, c_btn = st.columns([0.7, 0.15, 0.15])
+                
+                with c_info:
+                    # Stile condizionale: grigetto se già preso, nero se disponibile
+                    color = "#a0a0a0" if is_in_list else "#000000"
+                    nome_display = f"{row['Prodotto']} (In Lista)" if is_in_list else row['Prodotto']
+                    
+                    st.markdown(f"<span class='product-name' style='color:{color}'>{nome_display}</span>", unsafe_allow_html=True)
+                    st.caption(f"📍 {row['Corsia']}")
+                
+                with c_img:
+                    # Gestione immagini sicura (evita quadratini rotti)
+                    url = row.get('URL_Foto', "")
+                    if pd.notna(url) and str(url).startswith("http"):
+                        st.image(url, width=35) 
+                    else:
+                        st.write("📦")
+                
+                with c_btn:
+                    # Logica pulsante univoco per riga
+                    if is_in_list:
+                        # Icona carrello disabilitata se già presente
+                        st.button("🛒", key=f"btn_in_{idx}", disabled=True)
+                    else:
+                        # Pulsante di aggiunta con chiamata alla funzione save() corretta (riga 34)
+                        if st.button("➕", key=f"btn_add_{idx}"):
+                            st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
+                            st.session_state.df.at[idx, 'User'] = utente
+                            save() # Regressione evitata: usa save() e non save_to_gsheets()
+                            st.toast(f"✅ {row['Prodotto']} aggiunto!")
+                            st.rerun()
 
 # --- TAB 1: LISTA (PIANIFICAZIONE CASA) ---
 with tab1:
