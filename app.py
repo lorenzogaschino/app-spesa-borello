@@ -2,37 +2,37 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
-# 1. Configurazione Pagina (Deve essere la prima istruzione Streamlit)
+# 1. Configurazione Pagina
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
-# 2. CSS ORIGINALE + FIX PER BOTTONI GIGANTI
+# 2. CSS - Pulito da ogni carattere speciale
 st.markdown("""
 <style>
     .stMainBlockContainer { padding: 1rem !important; }
-
-    /* Stili Catalogo */
+    
+    /* Classi per il Catalogo */
     .cat-name {
-        font-size: 26px !important; 
+        font-size: 26px !important;
         font-weight: 800 !important;
         line-height: 1.1;
         color: #000000 !important;
         display: block;
     }
-    .cat-cap { 
-        font-size: 18px !important; 
-        color: #555555 !important; 
+    .cat-cap {
+        font-size: 18px !important;
+        color: #555555 !important;
         display: block;
         margin-bottom: 10px;
     }
     .cat-img {
-        width: 100px !important; 
+        width: 100px !important;
         height: 100px !important;
         object-fit: cover;
         border-radius: 12px;
         border: 1px solid #eee;
     }
 
-    /* Bottoni Giganti SOLO nel Catalogo */
+    /* Stile Bottoni Giganti - Limitati SOLO alla riga del catalogo */
     div.cat-row div.stButton > button {
         width: 100% !important;
         height: 70px !important;
@@ -48,31 +48,71 @@ st.markdown("""
 # 3. Connessione e Dati
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Funzione di salvataggio semplice
 def save():
     conn.update(worksheet="Catalogo", data=st.session_state.df)
 
-# Caricamento dati
 if 'df' not in st.session_state:
     st.session_state.df = conn.read(worksheet="Catalogo")
 
-# UTENTE (Lo mettiamo qui come variabile semplice, non nella sidebar)
-utente = "Lorenzo" # O Maria, puoi cambiarlo qui manualmente o rimetterlo dove preferisci
+utente = "Lorenzo"
 
-# --- 4. DEFINIZIONE TAB (Assicurati che questa riga sia esterna a ogni altro blocco) ---
+# 4. DEFINIZIONE TAB
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
 with tab1:
     st.markdown("### 🏠 Prodotti da comprare")
-    # Inserisci qui il tuo codice della lista. 
-    # Esempio minimo per non far sparire il tab:
     st.info("La tua lista apparirà qui.")
 
 with tab2:
     st.markdown("### 🛒 Spesa in corso")
-    # Esempio minimo per non far sparire il tab:
     st.info("L'interfaccia di spesa apparirà qui.")
 
+with tab3:
+    st.markdown("### 📦 Catalogo Prodotti")
+    
+    # Campo di ricerca
+    search = st.text_input("Cerca prodotto...", placeholder="Es: Pasta...", key="search_cat_v7")
+    
+    if 'df' in st.session_state:
+        # Creazione copia filtrata
+        df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy()
+        df_cat = df_cat.sort_values("Prodotto")
+        
+        if search:
+            df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
+
+        for idx, row in df_cat.iterrows():
+            is_in_list = row['Stato'] == "DA COMPRARE"
+            
+            with st.container():
+                # Wrapper HTML per applicare lo stile CSS
+                st.markdown('<div class="cat-row">', unsafe_allow_html=True)
+                
+                col_left, col_right = st.columns([0.7, 0.3])
+                
+                with col_left:
+                    color = "#bbbbbb" if is_in_list else "#000000"
+                    st.markdown(f'<span class="cat-name" style="color:{color}">{row["Prodotto"]}</span>', unsafe_allow_html=True)
+                    st.markdown(f'<span class="cat-cap">📍 {row["Corsia"]}</span>', unsafe_allow_html=True)
+                
+                with col_right:
+                    url = row.get('URL_Foto', "")
+                    if pd.notna(url) and str(url).startswith("http"):
+                        st.markdown(f'<img src="{url}" class="cat-img">', unsafe_allow_html=True)
+                
+                # Area Bottone
+                if is_in_list:
+                    st.button("🛒 IN LISTA", key=f"btn_in_cat_{idx}", disabled=True)
+                else:
+                    if st.button("➕ AGGIUNGI", key=f"btn_add_cat_{idx}"):
+                        st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
+                        st.session_state.df.at[idx, 'User'] = utente
+                        save()
+                        st.toast(f"✅ {row['Prodotto']} aggiunto!")
+                        st.rerun()
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.divider()
 # --- TAB 3: CATALOGO ---
 with tab3:
     st.markdown("### 📦 Catalogo Prodotti")
