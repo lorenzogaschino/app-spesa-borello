@@ -197,7 +197,6 @@ with tab1:
         
         if st.button("Inserisci in lista", use_container_width=True):
             if nuovo_p:
-                # Usiamo pd (che è importato a riga 2) in modo sicuro
                 new_row = pd.DataFrame([{
                     "Prodotto": nuovo_p, 
                     "Corsia": corsia_p, 
@@ -212,10 +211,11 @@ with tab1:
 
     st.divider()
 
-    # 2. VISUALIZZAZIONE E EDIT
-    # Aggiungiamo il controllo: se 'df' non esiste ancora in session_state, non procedere
+    # 2. VISUALIZZAZIONE E EDIT (Assicurati che 'if' sia allineato a 'with st.expander')
     if 'df' in st.session_state and isinstance(st.session_state.df, pd.DataFrame):
-        lista_edit = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"]
+        # Filtro dei dati
+        df_view = st.session_state.df.copy()
+        lista_edit = df_view[df_view['Stato'] == "DA COMPRARE"]
         
         if lista_edit.empty:
             st.info("La tua lista è vuota. Aggiungi qualcosa qui sopra o dal Catalogo!")
@@ -239,14 +239,13 @@ with tab1:
             
             st.write("") 
             if st.button("🗑️ Svuota tutta la lista", type="secondary", use_container_width=True):
-                # Pulizia sicura
+                # Reset massivo
                 st.session_state.df.loc[st.session_state.df['Stato'] == "DA COMPRARE", 'Stato'] = ""
                 st.session_state.df = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].reset_index(drop=True)
                 save()
                 st.rerun()
     else:
-        st.warning("Caricamento dati in corso... Se l'errore persiste, ricarica la pagina.")
-
+        st.warning("In attesa del database...")
 # --- TAB 2: SPESA (MODIFICHE PUNTUALI) ---
 with tab2:
     st.subheader("🛒 Al Supermercato")
