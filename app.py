@@ -189,7 +189,7 @@ with tab3:
 with tab1:
     st.subheader("📝 Lista della Spesa")
     
-    # 1. AGGIUNTA RAPIDA (Prodotto non in catalogo)
+    # 1. AGGIUNTA RAPIDA
     with st.expander("➕ Aggiungi al volo", expanded=False):
         c_n, c_c = st.columns([0.6, 0.4])
         nuovo_p = c_n.text_input("Cosa manca?", key="quick_add_name")
@@ -197,7 +197,7 @@ with tab1:
         
         if st.button("Inserisci in lista", use_container_width=True):
             if nuovo_p:
-                # Creazione riga per prodotto "extra"
+                # Usiamo pd (che è importato a riga 2) in modo sicuro
                 new_row = pd.DataFrame([{
                     "Prodotto": nuovo_p, 
                     "Corsia": corsia_p, 
@@ -206,23 +206,21 @@ with tab1:
                     "Tipo": "Manuale", 
                     "URL_Foto": ""
                 }])
-                # Concateniamo e resettiamo l'indice per evitare duplicati
                 st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
                 save() 
                 st.rerun()
 
     st.divider()
 
-    # 2. VISUALIZZAZIONE E EDIT DELLA LISTA
-    if 'df' in st.session_state:
-        # Filtriamo solo i prodotti selezionati (usiamo .index per sicurezza)
+    # 2. VISUALIZZAZIONE E EDIT
+    # Aggiungiamo il controllo: se 'df' non esiste ancora in session_state, non procedere
+    if 'df' in st.session_state and isinstance(st.session_state.df, pd.DataFrame):
         lista_edit = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"]
         
         if lista_edit.empty:
             st.info("La tua lista è vuota. Aggiungi qualcosa qui sopra o dal Catalogo!")
         else:
             for idx, row in lista_edit.iterrows():
-                # Usiamo un border per separare bene i prodotti su mobile
                 with st.container(border=True):
                     col_info, col_del = st.columns([0.8, 0.2])
                     
@@ -231,27 +229,23 @@ with tab1:
                         st.caption(f"👤 {row['User']} | 📍 Corsia: {row['Corsia']}")
                     
                     with col_del:
-                        # Tasto per rimuovere dalla lista
                         if st.button("❌", key=f"remove_{idx}"):
                             if row.get('Tipo') == "Manuale":
-                                # Se è manuale, lo eliminiamo fisicamente
                                 st.session_state.df = st.session_state.df.drop(idx).reset_index(drop=True)
                             else:
-                                # Se è da catalogo, resettiamo solo lo stato
                                 st.session_state.df.at[idx, 'Stato'] = ""
-                            
                             save()
                             st.rerun()
             
-            # 3. AZIONI MASSIVE
-            st.write("") # Spaziatore
+            st.write("") 
             if st.button("🗑️ Svuota tutta la lista", type="secondary", use_container_width=True):
-                # 1. Resetta lo stato di quelli da catalogo
+                # Pulizia sicura
                 st.session_state.df.loc[st.session_state.df['Stato'] == "DA COMPRARE", 'Stato'] = ""
-                # 2. Elimina i prodotti manuali
                 st.session_state.df = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].reset_index(drop=True)
                 save()
                 st.rerun()
+    else:
+        st.warning("Caricamento dati in corso... Se l'errore persiste, ricarica la pagina.")
 
 # --- TAB 2: SPESA (MODIFICHE PUNTUALI) ---
 with tab2:
