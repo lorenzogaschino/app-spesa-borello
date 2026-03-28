@@ -5,133 +5,70 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Configurazione Pagina
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
-# 1. Configurazione Pagina (Inizio file)
-st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
-
-# CSS Ultra-Mobile: Forza orizzontale, niente scorrimento, font compatti
+# CSS Ultra-Compatto per Mobile (Forza orizzontale e rimuove scroll)
 st.markdown("""
 <style>
-    /* A. Gestione Globale Contenitore e Margini */
-    .stMainBlockContainer {
-        padding-left: 0.5rem !important;  /* Margini minimi ai lati */
-        padding-right: 0.5rem !important;
-        overflow-x: hidden !important; /* Disabilita lo scroll orizzontale globale */
-    }
-
-    /* B. Forza le colonne a stare su una riga - Senza scorrimento */
+    .stMainBlockContainer { padding: 0.5rem 0.5rem !important; overflow-x: hidden !important; }
+    
+    /* Forza le colonne sulla stessa riga */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
-        flex-wrap: nowrap !important; /* Impedisce l'andata a capo */
-        gap: 0.2rem !important; /* Spazio piccolissimo tra elementi */
+        flex-wrap: nowrap !important;
         align-items: center !important;
-        width: 100% !important; /* Occupa tutta la larghezza */
-        min-width: 0 !important; /* Importante per flex-shrink */
+        gap: 0.3rem !important;
     }
 
-    [data-testid="column"] {
-        width: auto !important;
-        flex: 1 1 auto !important; /* Permette alle colonne di ridimensionarsi */
-        min-width: 0px !important; /* Permette il ridimensionamento sotto la larghezza del contenuto */
-        overflow: hidden !important; /* Impedisce al contenuto di forzare la larghezza */
-    }
+    [data-testid="column"] { min-width: 0px !important; flex: 1 1 auto !important; overflow: hidden !important; }
 
-    /* C. Stile Prodotti: Compatto, font più piccoli, ellipses */
+    /* Testo Prodotto: puntini sospensivi se troppo lungo */
     .product-name {
         font-size: 15px !important;
         font-weight: 600 !important;
-        color: #111111;
-        margin-bottom: 0px !important;
         line-height: 1.1;
-        /* Gestione nomi troppo lunghi: mette i puntini se non ci sta */
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         display: block;
     }
 
-    /* Corsia */
-    [data-testid="stCaptionContainer"] {
-        font-size: 11px !important;
-        margin-top: 0px !important;
+    /* Immagini e Bottoni */
+    [data-testid="stImage"] img { max-width: 35px !important; height: auto !important; }
+    .stButton>button { 
+        padding: 0px !important; height: 35px !important; width: 35px !important; 
+        min-width: 35px !important; border-radius: 8px;
     }
 
-    /* Immagini */
-    [data-testid="stImage"] img {
-        max-width: 35px !important; /* Larghezza massima dell'immagine */
-        height: auto !important;
-    }
-
-    /* D. Tab Compatti (Selezionatore Utente) */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 4px;
-        padding-top: 0;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 38px;
-        border-radius: 8px;
-        flex-grow: 1;
-        font-size: 12px;
-        padding-left: 5px;
-        padding-right: 5px;
-    }
+    /* Tabs e Toast */
+    .stTabs [data-baseweb="tab"] { height: 40px; font-size: 12px; padding: 0 5px; }
     .stTabs [aria-selected="true"] { background-color: #4b5320 !important; color: white !important; }
-
-    /* E. Bottoni Quadrati Compatti */
-    .stButton>button {
-        padding: 0px !important;
-        height: 35px !important;
-        width: 35px !important;
-        min-width: 35px !important;
-        border-radius: 10px;
-        background-color: transparent;
-        border: 1px solid #ccc;
-    }
-    .stButton>button:disabled { background-color: #f0f0f0; }
-
-    /* F. Toast e Altro */
-    [data-testid="stToast"] {
-        background-color: #2e7d32 !important;
-        color: white !important;
-        width: 100% !important;
-    }
-    .stSelectbox { font-size: 14px; }
+    [data-testid="stToast"] { background-color: #2e7d32 !important; color: white !important; width: 100% !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# 2. Connessione e Gestione Dati (Continuazione file...)
+# 2. Connessione e Gestione Dati
 conn = st.connection("gsheets", type=GSheetsConnection)
-# ... (restante codice invariato) ...
-    
-    # Pulizia colonne: aggiunge quelle mancanti se il foglio è nuovo
-    for col in ['Stato', 'User', 'Tipo', 'URL_Foto']:
-        if col not in raw_df.columns:
-            raw_df[col] = ""
-            
-    # Gestione Corsia: trasforma in testo e gestisce i valori vuoti
-    raw_df['Corsia'] = raw_df['Corsia'].astype(str).replace(['nan', 'None', ''], '?')
-    
-    # Salva tutto nello stato dell'app
-    st.session_state.df = raw_df
 
 def save():
-    # Trasforma i dati in un formato pulito per Google Sheets
-    data_to_save = st.session_state.df.copy()
-    # Converte eventuali valori nulli in stringhe vuote per evitare errori API
-    data_to_save = data_to_save.fillna("")
-    # Aggiorna il foglio
-    conn.update(worksheet="Catalogo", data=data_to_save)
+    try:
+        data_to_save = st.session_state.df.copy()
+        conn.update(worksheet="Catalogo", data=data_to_save)
+    except Exception as e:
+        st.error(f"Errore salvataggio: {e}")
 
-# 3. Header
-col_logo, col_user = st.columns([0.2, 0.8])
-with col_logo:
-    st.write("🛒") # Sostituisci con st.image se preferisci
-with col_user:
-    utente = st.selectbox("Utente:", ["Lorenzo", "Maria"], label_visibility="collapsed")
+if 'df' not in st.session_state:
+    try:
+        raw_df = conn.read(worksheet="Catalogo")
+        for col in ['Stato', 'User', 'Tipo', 'URL_Foto']:
+            if col not in raw_df.columns: raw_df[col] = ""
+        raw_df['Corsia'] = raw_df['Corsia'].astype(str).replace(['nan', 'None'], '?')
+        st.session_state.df = raw_df
+    except Exception:
+        st.error("Errore caricamento Database")
 
-# 4. MENU TABS
+# 3. Header e Navigazione
+utente = st.selectbox("Utente", ["Lorenzo", "Maria"], label_visibility="collapsed")
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
-
 # --- TAB 3: CATALOGO (VERSIONE COMPATTA MOBILE DEFINTIVA V1.2) ---
 with tab3:
     # Ridotto a st.write per risparmiare altezza
