@@ -53,7 +53,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Crea le schede (Tab) prima di usarle
+# --- 2. DEFINIZIONE TAB ---
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
 # --- TAB 3: CATALOGO ---
@@ -61,25 +61,23 @@ with tab3:
     st.write("## 📦 Catalogo")
     search = st.text_input("Cerca prodotto...", placeholder="Pasta, latte...", key="search_cat_v3")
     
-    # 1. Recupero e filtraggio dati
+    # Controllo se il dataframe esiste
     if 'df' in st.session_state and isinstance(st.session_state.df, pd.DataFrame):
-        # Filtriamo direttamente creando il DataFrame df_cat
-        df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy()
-        df_cat = df_cat.sort_values("Prodotto")
-        
+        # Filtro dati
+        df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
         if search:
             df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
-            
-        # 2. Ciclo di visualizzazione (solo se df_cat non è vuoto)
+
         for idx, row in df_cat.iterrows():
             is_in_list = row['Stato'] == "DA COMPRARE"
             
             with st.container():
+                # LAYOUT: Testo a sinistra (70%), Foto a destra (30%)
                 col_left, col_right = st.columns([0.7, 0.3])
                 
                 with col_left:
                     color = "#bbbbbb" if is_in_list else "#000000"
-                    status_txt = " (In lista)" if is_in_list else ""
+                    status_txt = " (Già in lista)" if is_in_list else ""
                     st.markdown(f'<span class="product-name-large" style="color:{color}">{row["Prodotto"]}{status_txt}</span>', unsafe_allow_html=True)
                     st.markdown(f'<span class="product-cap-large">📍 {row["Corsia"]}</span>', unsafe_allow_html=True)
                 
@@ -88,30 +86,19 @@ with tab3:
                     if url and str(url).startswith("http"):
                         st.markdown(f'<img src="{url}" class="cat-img-large">', unsafe_allow_html=True)
 
-                # Bottone + Sotto
+                # BOTTONE SOTTO (Riga dedicata)
                 if is_in_list:
                     st.button("🛒 AGGIUNTO", key=f"btn_in_{idx}", disabled=True)
                 else:
                     if st.button(f"➕ AGGIUNGI", key=f"btn_add_{idx}"):
                         st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
                         st.session_state.df.at[idx, 'User'] = utente
-                        save()
+                        save() # Chiama la funzione definita a riga 33
                         st.toast(f"✅ {row['Prodotto']} aggiunto!")
                         st.rerun()
                 st.divider()
     else:
-        st.error("Errore nel caricamento dei dati. Controlla la connessione a Google Sheets.")
-            # BOTTONE SOTTO (Riga dedicata)
-            if is_in_list:
-                st.button("🛒 AGGIUNTO", key=f"btn_in_{idx}", disabled=True)
-            else:
-                if st.button(f"➕ AGGIUNGI", key=f"btn_add_{idx}"):
-                    st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
-                    st.session_state.df.at[idx, 'User'] = utente
-                    save() # Chiama la funzione di riga 33
-                    st.toast(f"✅ {row['Prodotto']} aggiunto!")
-                    st.rerun()
-            st.divider()
+        st.error("Dati non caricati. Controlla la connessione a Google Sheets.")
                     
 # --- TAB 1: LISTA (PIANIFICAZIONE CASA) ---
 with tab1:
