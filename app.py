@@ -88,53 +88,70 @@ with tab3:
                         save() # <--- Chiamata corretta alla riga 34
                         st.toast(f"Aggiunto: {row['Prodotto']}")
 
-# --- TAB 1: LISTA (MODIFICHE PUNTUALI) ---
+# --- TAB 1: LISTA (PIANIFICAZIONE CASA) ---
 with tab1:
     st.subheader("📝 Lista della Spesa")
     
-    # Inserimento rapido
+    # 1. AGGIUNTA RAPIDA (Prodotto non in catalogo)
     with st.expander("➕ Aggiungi al volo", expanded=False):
         c_n, c_c = st.columns([0.6, 0.4])
-        nuovo_p = c_n.text_input("Cosa manca?", key="new_p_input")
-        corsia_p = c_c.selectbox("Corsia", ["?", "1", "2", "3", "4", "5", "FRESCHI", "SURGELATI"], key="new_p_corsia")
+        nuovo_p = c_n.text_input("Cosa manca?", key="quick_add_name")
+        corsia_p = c_c.selectbox("Corsia", ["?", "1", "2", "3", "4", "5", "FRESCHI", "SURGELATI"], key="quick_add_corsia")
+        
         if st.button("Inserisci in lista", use_container_width=True):
             if nuovo_p:
+                # Creazione riga per prodotto "extra"
                 new_row = pd.DataFrame([{
-                    "Prodotto": nuovo_p, "Corsia": corsia_p, "Stato": "DA COMPRARE", 
-                    "User": utente, "Tipo": "Manuale", "URL_Foto": ""
+                    "Prodotto": nuovo_p, 
+                    "Corsia": corsia_p, 
+                    "Stato": "DA COMPRARE", 
+                    "User": utente, 
+                    "Tipo": "Manuale", 
+                    "URL_Foto": ""
                 }])
                 st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
-                save()
+                save() # <--- Chiamata corretta riga 34
                 st.rerun()
 
     st.divider()
 
-    # Visualizzazione e Edit rapido
+    # 2. VISUALIZZAZIONE E EDIT DELLA LISTA
+    # Filtriamo solo i prodotti selezionati
     lista_edit = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"]
     
     if lista_edit.empty:
-        st.info("Lista vuota.")
+        st.info("La tua lista è vuota. Aggiungi qualcosa qui sopra o dal Catalogo!")
     else:
         for idx, row in lista_edit.iterrows():
             with st.container(border=True):
-                col_info, col_actions = st.columns([0.7, 0.3])
+                col_info, col_del = st.columns([0.8, 0.2])
+                
                 with col_info:
                     st.write(f"**{row['Prodotto']}**")
-                    # Edit rapido della corsia se necessario
-                    nuova_corsia = st.selectbox(f"Sposta C.", ["?", "1", "2", "3", "4", "5", "F.", "S."], 
-                                              index=0, key=f"edit_c_{idx}", label_visibility="collapsed")
-                    if nuova_corsia != row['Corsia'] and nuova_corsia != "Sposta C.":
-                        st.session_state.df.at[idx, 'Corsia'] = nuova_corsia
-                        save()
-                        st.rerun()
-                with col_actions:
-                    if st.button("❌", key=f"del_{idx}"):
-                        if row['Tipo'] == "Manuale":
+                    st.caption(f"👤 {row['User']} | 📍 Corsia: {row['Corsia']}")
+                
+                with col_del:
+                    # Tasto per rimuovere dalla lista
+                    if st.button("❌", key=f"remove_{idx}"):
+                        if row.get('Tipo') == "Manuale":
+                            # Se è manuale, lo eliminiamo fisicamente dal DF
                             st.session_state.df = st.session_state.df.drop(idx).reset_index(drop=True)
                         else:
+                            # Se è da catalogo, resettiamo solo lo stato
                             st.session_state.df.at[idx, 'Stato'] = ""
-                        save()
+                        
+                        save() # <--- Chiamata corretta riga 34
                         st.rerun()
+        
+        # 3. AZIONI MASSIVE
+        st.write("") # Spaziatore
+        if st.button("🗑️ Svuota tutta la lista", type="secondary"):
+            # Resetta lo stato di tutti i prodotti
+            st.session_state.df['Stato'] = ""
+            # Elimina i prodotti manuali per non sporcare il DB a lungo termine
+            st.session_state.df = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].reset_index(drop=True)
+            save()
+            st.rerun()
 
 # --- TAB 2: SPESA (MODIFICHE PUNTUALI) ---
 with tab2:
