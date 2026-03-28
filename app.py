@@ -22,12 +22,20 @@ st.markdown("""
 # 2. Connessione e Gestione Dati
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Utilizziamo lo session_state per evitare troppe letture dal DB
+# Caricamento iniziale dei dati
 if 'df' not in st.session_state:
+    # Legge il foglio (assicurati che il tab si chiami "Catalogo")
     raw_df = conn.read(worksheet="Catalogo")
-    st.session_state.df['Corsia'] = st.session_state.df['Corsia'].astype(str).replace('nan', '?')
-    for col in ['Stato', 'User', 'Tipo']:
-        if col not in raw_df.columns: raw_df[col] = ""
+    
+    # Pulizia colonne: aggiunge quelle mancanti se il foglio è nuovo
+    for col in ['Stato', 'User', 'Tipo', 'URL_Foto']:
+        if col not in raw_df.columns:
+            raw_df[col] = ""
+            
+    # Gestione Corsia: trasforma in testo e gestisce i valori vuoti
+    raw_df['Corsia'] = raw_df['Corsia'].astype(str).replace(['nan', 'None', ''], '?')
+    
+    # Salva tutto nello stato dell'app
     st.session_state.df = raw_df
 
 def save():
