@@ -25,7 +25,7 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 # Utilizziamo lo session_state per evitare troppe letture dal DB
 if 'df' not in st.session_state:
     raw_df = conn.read(worksheet="Catalogo")
-st.session_state.df['Corsia'] = st.session_state.df['Corsia'].astype(str).replace('nan', '?')    # Assicuriamoci che le colonne esistano
+    st.session_state.df['Corsia'] = st.session_state.df['Corsia'].astype(str).replace('nan', '?')
     for col in ['Stato', 'User', 'Tipo']:
         if col not in raw_df.columns: raw_df[col] = ""
     st.session_state.df = raw_df
