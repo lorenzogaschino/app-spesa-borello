@@ -192,10 +192,10 @@ with tab1:
     # 1. AGGIUNTA RAPIDA
     with st.expander("➕ Aggiungi al volo", expanded=False):
         c_n, c_c = st.columns([0.6, 0.4])
-        nuovo_p = c_n.text_input("Cosa manca?", key="quick_add_name")
-        corsia_p = c_c.selectbox("Corsia", ["?", "1", "2", "3", "4", "5", "FRESCHI", "SURGELATI"], key="quick_add_corsia")
+        nuovo_p = c_n.text_input("Cosa manca?", key="input_rapido_lista") # Chiave univoca
+        corsia_p = c_c.selectbox("Corsia", ["?", "1", "2", "3", "4", "5", "FRESCHI", "SURGELATI"], key="corsia_rapida_lista")
         
-        if st.button("Inserisci in lista", use_container_width=True):
+        if st.button("Inserisci in lista", key="btn_inserisci_rapido", use_container_width=True):
             if nuovo_p:
                 new_row = pd.DataFrame([{
                     "Prodotto": nuovo_p, 
@@ -211,25 +211,25 @@ with tab1:
 
     st.divider()
 
-    # 2. VISUALIZZAZIONE E EDIT (Assicurati che 'if' sia allineato a 'with st.expander')
-    if 'df' in st.session_state and isinstance(st.session_state.df, pd.DataFrame):
-        # Filtro dei dati
-        df_view = st.session_state.df.copy()
-        lista_edit = df_view[df_view['Stato'] == "DA COMPRARE"]
+    # 2. VISUALIZZAZIONE E EDIT
+    if 'df' in st.session_state:
+        # Usiamo una copia per evitare errori di mutazione durante il loop
+        lista_attuale = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy()
         
-        if lista_edit.empty:
+        if lista_attuale.empty:
             st.info("La tua lista è vuota. Aggiungi qualcosa qui sopra o dal Catalogo!")
         else:
-            for idx, row in lista_edit.iterrows():
+            for idx, row in lista_attuale.iterrows():
                 with st.container(border=True):
                     col_info, col_del = st.columns([0.8, 0.2])
                     
                     with col_info:
                         st.write(f"**{row['Prodotto']}**")
-                        st.caption(f"👤 {row['User']} | 📍 Corsia: {row['Corsia']}")
+                        st.caption(f"👤 {row['User']} | 📍 {row['Corsia']}")
                     
                     with col_del:
-                        if st.button("❌", key=f"remove_{idx}"):
+                        # CHIAVE MODIFICATA: aggiungiamo 'list_del_' per evitare conflitti con il catalogo
+                        if st.button("❌", key=f"list_del_{idx}"):
                             if row.get('Tipo') == "Manuale":
                                 st.session_state.df = st.session_state.df.drop(idx).reset_index(drop=True)
                             else:
@@ -238,14 +238,14 @@ with tab1:
                             st.rerun()
             
             st.write("") 
-            if st.button("🗑️ Svuota tutta la lista", type="secondary", use_container_width=True):
-                # Reset massivo
-                st.session_state.df.loc[st.session_state.df['Stato'] == "DA COMPRARE", 'Stato'] = ""
-                st.session_state.df = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].reset_index(drop=True)
+            if st.button("🗑️ Svuota tutta la lista", key="btn_svuota_totale", type="secondary", use_container_width=True):
+                # Pulizia sicura tramite maschera booleana
+                mask_da_comprare = st.session_state.df['Stato'] == "DA COMPRARE"
+                st.session_state.df.loc[mask_da_comprare & (st.session_state.df['Tipo'] != "Manuale"), 'Stato'] = ""
+                st.session_state.df = st.session_state.df[~((st.session_state.df['Tipo'] == "Manuale") & mask_da_comprare)].reset_index(drop=True)
                 save()
                 st.rerun()
-    else:
-        st.warning("In attesa del database...")
+                
 # --- TAB 2: SPESA (MODIFICHE PUNTUALI) ---
 with tab2:
     st.subheader("🛒 Al Supermercato")
