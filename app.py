@@ -4,98 +4,64 @@ from streamlit_gsheets import GSheetsConnection
 
 # 1. Configurazione Pagina (Inizio file)
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
-
-# CSS Ultra-Mobile: Forza orizzontale, niente scorrimento, font compatti
+# --- 1. CONFIGURAZIONE E CSS (Sostituisce righe 8-97) ---
 st.markdown("""
 <style>
-    /* A. Gestione Globale Contenitore e Margini */
-    .stMainBlockContainer {
-        padding-left: 0.5rem !important;  /* Margini minimi ai lati */
-        padding-right: 0.5rem !important;
-        overflow-x: hidden !important; /* Disabilita lo scroll orizzontale globale */
+    /* Reset margini per massimizzare lo spazio su mobile */
+    .stMainBlockContainer { 
+        padding: 0.5rem !important; 
+        overflow-x: hidden !important; 
     }
-
-    /* B. Forza le colonne a stare su una riga - Senza scorrimento */
-    [data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important; /* Impedisce l'andata a capo */
-        gap: 0.2rem !important; /* Spazio piccolissimo tra elementi */
-        align-items: center !important;
-        width: 100% !important; /* Occupa tutta la larghezza */
-        min-width: 0 !important; /* Importante per flex-shrink */
+    
+    /* TABELLA BLINDATA: Impedisce lo scroll orizzontale */
+    .cat-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed; /* Fondamentale: blocca le larghezze */
     }
+    
+    .cat-td-txt { width: 65%; padding: 2px; vertical-align: middle; }
+    .cat-td-img { width: 18%; text-align: center; padding: 2px; vertical-align: middle; }
+    .cat-td-btn { width: 17%; text-align: right; padding: 2px; vertical-align: middle; }
 
-    [data-testid="column"] {
-        width: auto !important;
-        flex: 1 1 auto !important; /* Permette alle colonne di ridimensionarsi */
-        min-width: 0px !important; /* Permette il ridimensionamento sotto la larghezza del contenuto */
-        overflow: hidden !important; /* Impedisce al contenuto di forzare la larghezza */
-    }
-
-    /* C. Stile Prodotti: Compatto, font più piccoli, ellipses */
+    /* Testo Prodotto: Tronca se troppo lungo */
     .product-name {
-        font-size: 15px !important;
-        font-weight: 600 !important;
-        color: #111111;
-        margin-bottom: 0px !important;
-        line-height: 1.1;
-        /* Gestione nomi troppo lunghi: mette i puntini se non ci sta */
+        font-size: 14px !important;
+        font-weight: 600;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         display: block;
+        line-height: 1.2;
+    }
+    .product-cap { font-size: 11px; color: gray; display: block; }
+
+    /* Immagine: Quadrata e fissa */
+    .cat-img {
+        width: 38px !important;
+        height: 38px !important;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid #eee;
     }
 
-    /* Corsia */
-    [data-testid="stCaptionContainer"] {
-        font-size: 11px !important;
-        margin-top: 0px !important;
-    }
-
-    /* Immagini */
-    [data-testid="stImage"] img {
-        max-width: 35px !important; /* Larghezza massima dell'immagine */
-        height: auto !important;
-    }
-
-    /* D. Tab Compatti (Selezionatore Utente) */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 4px;
-        padding-top: 0;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 38px;
-        border-radius: 8px;
-        flex-grow: 1;
-        font-size: 12px;
-        padding-left: 5px;
-        padding-right: 5px;
-    }
-    .stTabs [aria-selected="true"] { background-color: #4b5320 !important; color: white !important; }
-
-    /* E. Bottoni Quadrati Compatti */
+    /* Bottone: Quadrato perfetto e allineato */
     .stButton>button {
-        padding: 0px !important;
-        height: 35px !important;
         width: 35px !important;
+        height: 35px !important;
+        padding: 0px !important;
         min-width: 35px !important;
-        border-radius: 10px;
-        background-color: transparent;
-        border: 1px solid #ccc;
+        border-radius: 8px !important;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
-    .stButton>button:disabled { background-color: #f0f0f0; }
-
-    /* F. Toast e Altro */
-    [data-testid="stToast"] {
-        background-color: #2e7d32 !important;
-        color: white !important;
-        width: 100% !important;
-    }
-    .stSelectbox { font-size: 14px; }
+    
+    /* Tab e Toast */
+    .stTabs [data-baseweb="tab"] { height: 40px; font-size: 12px; }
+    [data-testid="stToast"] { background-color: #2e7d32 !important; color: white !important; }
 </style>
 """, unsafe_allow_html=True)
-
 # 2. Connessione e Gestione Dati
 conn = st.connection("gsheets", type=GSheetsConnection)
 
