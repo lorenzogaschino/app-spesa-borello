@@ -46,31 +46,47 @@ with col_user:
 # 4. MENU TABS
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
-# --- TAB 3: CATALOGO (Aggiunta prodotti) ---
+# --- TAB 3: CATALOGO (DATABASE PRODOTTI) ---
 with tab3:
     st.subheader("📦 Catalogo Prodotti")
-    search = st.text_input("Cerca...", placeholder="Es: Mele")
     
+    # Campo di ricerca
+    search = st.text_input("Cerca nel database...", placeholder="Es: Mele, Pasta...", key="catalog_search")
+    
+    # Filtriamo il DF per escludere i prodotti aggiunti "Manualmente" (opzionale)
+    # e applichiamo la ricerca se presente
     df_cat = st.session_state.df.copy()
     if search:
-        df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False)]
+        df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
 
-    for corsia in sorted(df_cat['Corsia'].unique()):
-        with st.expander(f"📍 Corsia {corsia}"):
+    # Ciclo per Corsia
+    corsie_disponibili = sorted(df_cat['Corsia'].unique())
+    
+    for corsia in corsie_disponibili:
+        with st.expander(f"📍 Corsia {corsia}", expanded=search != ""):
             items = df_cat[df_cat['Corsia'] == corsia]
+            
             for idx, row in items.iterrows():
-                c1, c2, c3 = st.columns([0.2, 0.6, 0.2])
-                with c1:
-                    # Piccolo check per URL immagine
-                    st.write("📷" if pd.isna(row.get('URL_Foto')) else "🖼️")
-                with c2:
+                c_img, c_name, c_btn = st.columns([0.15, 0.65, 0.2])
+                
+                with c_img:
+                    # Gestione icone/immagini per evitare errori di caricamento
+                    url = row.get('URL_Foto', "")
+                    if pd.notna(url) and str(url).startswith("http"):
+                        st.image(url, width=40)
+                    else:
+                        st.write("📦") # Icona di fallback se non c'è foto
+                
+                with c_name:
                     st.write(f"**{row['Prodotto']}**")
-                with c3:
-                    if st.button("➕", key=f"add_{idx}"):
+                
+                with c_btn:
+                    # Il tasto che ha generato l'errore: ora usa save()
+                    if st.button("➕", key=f"cat_add_{idx}"):
                         st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
                         st.session_state.df.at[idx, 'User'] = utente
-                        save_to_gsheets()
-                        st.toast(f"{row['Prodotto']} aggiunto!")
+                        save() # <--- Chiamata corretta alla riga 34
+                        st.toast(f"Aggiunto: {row['Prodotto']}")
 
 # --- TAB 1: LISTA (MODIFICHE PUNTUALI) ---
 with tab1:
