@@ -5,65 +5,103 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Configurazione Pagina
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
-# 1. Configurazione Pagina e CSS Ultra-Compatto
+# 1. Configurazione Pagina (Inizio file)
+st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
+
+# CSS Ultra-Mobile: Forza orizzontale, niente scorrimento, font compatti
 st.markdown("""
 <style>
-    /* FORZA ORIZZONTALE - Impedisce alle colonne di andare a capo */
+    /* A. Gestione Globale Contenitore e Margini */
+    .stMainBlockContainer {
+        padding-left: 0.5rem !important;  /* Margini minimi ai lati */
+        padding-right: 0.5rem !important;
+        overflow-x: hidden !important; /* Disabilita lo scroll orizzontale globale */
+    }
+
+    /* B. Forza le colonne a stare su una riga - Senza scorrimento */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
-        flex-wrap: nowrap !important;
+        flex-wrap: nowrap !important; /* Impedisce l'andata a capo */
+        gap: 0.2rem !important; /* Spazio piccolissimo tra elementi */
         align-items: center !important;
-        gap: 4px !important;
+        width: 100% !important; /* Occupa tutta la larghezza */
+        min-width: 0 !important; /* Importante per flex-shrink */
     }
 
     [data-testid="column"] {
-        min-width: 0px !important;
-        flex-grow: 1 !important;
+        width: auto !important;
+        flex: 1 1 auto !important; /* Permette alle colonne di ridimensionarsi */
+        min-width: 0px !important; /* Permette il ridimensionamento sotto la larghezza del contenuto */
+        overflow: hidden !important; /* Impedisce al contenuto di forzare la larghezza */
     }
 
-    /* RIDUZIONE SPAZI - Per far stare tutto in larghezza */
-    .stMainBlockContainer { padding-left: 1rem; padding-right: 1rem; }
-    
+    /* C. Stile Prodotti: Compatto, font più piccoli, ellipses */
     .product-name {
-        font-size: 15px !important; 
+        font-size: 15px !important;
         font-weight: 600 !important;
+        color: #111111;
+        margin-bottom: 0px !important;
         line-height: 1.1;
-        display: block;
+        /* Gestione nomi troppo lunghi: mette i puntini se non ci sta */
+        white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
+        display: block;
     }
 
-    /* BOTTONI E TAB COMPATTI */
-    .stButton>button { 
-        padding: 0px !important; 
-        height: 35px !important; 
-        width: 35px !important;
-        min-width: 35px !important;
+    /* Corsia */
+    [data-testid="stCaptionContainer"] {
+        font-size: 11px !important;
+        margin-top: 0px !important;
     }
-    
-    .stTabs [data-baseweb="tab"] { 
-        height: 40px; border-radius: 8px; font-size: 12px; 
+
+    /* Immagini */
+    [data-testid="stImage"] img {
+        max-width: 35px !important; /* Larghezza massima dell'immagine */
+        height: auto !important;
+    }
+
+    /* D. Tab Compatti (Selezionatore Utente) */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 4px;
+        padding-top: 0;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 38px;
+        border-radius: 8px;
+        flex-grow: 1;
+        font-size: 12px;
+        padding-left: 5px;
+        padding-right: 5px;
     }
     .stTabs [aria-selected="true"] { background-color: #4b5320 !important; color: white !important; }
 
-    /* TOAST VERDE */
+    /* E. Bottoni Quadrati Compatti */
+    .stButton>button {
+        padding: 0px !important;
+        height: 35px !important;
+        width: 35px !important;
+        min-width: 35px !important;
+        border-radius: 10px;
+        background-color: transparent;
+        border: 1px solid #ccc;
+    }
+    .stButton>button:disabled { background-color: #f0f0f0; }
+
+    /* F. Toast e Altro */
     [data-testid="stToast"] {
         background-color: #2e7d32 !important;
         color: white !important;
         width: 100% !important;
     }
+    .stSelectbox { font-size: 14px; }
 </style>
 """, unsafe_allow_html=True)
 
-# 2. Connessione e Gestione Dati
+# 2. Connessione e Gestione Dati (Continuazione file...)
 conn = st.connection("gsheets", type=GSheetsConnection)
-
-# Caricamento iniziale dei dati
-if 'df' not in st.session_state:
-    # Legge il foglio (assicurati che il tab si chiami "Catalogo")
-    raw_df = conn.read(worksheet="Catalogo")
+# ... (restante codice invariato) ...
     
     # Pulizia colonne: aggiunge quelle mancanti se il foglio è nuovo
     for col in ['Stato', 'User', 'Tipo', 'URL_Foto']:
@@ -94,65 +132,58 @@ with col_user:
 # 4. MENU TABS
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
-# --- TAB 3: CATALOGO (VERSIONE 1.1 COMPATTA) ---
+# --- TAB 3: CATALOGO (VERSIONE COMPATTA MOBILE DEFINTIVA V1.2) ---
 with tab3:
-    st.subheader("📦 Catalogo")
-    
-    # Campo di ricerca per trovare i prodotti velocemente
-    search = st.text_input("Cerca nel database...", placeholder="Es: Pasta, Mele...", key="catalog_search_final")
-    
-    # 1. Preparazione Dati: Filtriamo solo prodotti da catalogo e ordiniamo
-    # Usiamo una copia per non sporcare il dataframe principale durante i filtri
+    # Ridotto a st.write per risparmiare altezza
+    st.write("📦 **Catalogo**")
+
+    # Ricerca con altezza ridotta (key univoca v1.2)
+    search = st.text_input("Cerca nel database...", placeholder="Es: Pasta, Mele...", key="cat_search_v1.2_def")
+
+    # 1. Preparazione Dati: Alfabetico e solo Catalogo
     df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy()
     df_cat = df_cat.sort_values(by="Prodotto")
-    
+
     if search:
         df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
 
-    st.divider()
+    # 2. Visualizzazione prodotti
+    for idx, row in df_cat.iterrows():
+        is_in_list = row['Stato'] == "DA COMPRARE"
 
-    # 2. Ciclo di visualizzazione prodotti
-    if df_cat.empty:
-        st.info("Nessun prodotto trovato nel catalogo.")
-    else:
-        for idx, row in df_cat.iterrows():
-            # Controllo regressione: verifichiamo se è già in lista
-            is_in_list = row['Stato'] == "DA COMPRARE"
-            
-            with st.container():
-                # Proporzioni 70/15/15 per incastrare tutto su mobile senza scroll
-                c_info, c_img, c_btn = st.columns([0.7, 0.15, 0.15])
-                
-                with c_info:
-                    # Stile condizionale: grigetto se già preso, nero se disponibile
-                    color = "#a0a0a0" if is_in_list else "#000000"
-                    nome_display = f"{row['Prodotto']} (In Lista)" if is_in_list else row['Prodotto']
-                    
-                    st.markdown(f"<span class='product-name' style='color:{color}'>{nome_display}</span>", unsafe_allow_html=True)
-                    st.caption(f"📍 {row['Corsia']}")
-                
-                with c_img:
-                    # Gestione immagini sicura (evita quadratini rotti)
-                    url = row.get('URL_Foto', "")
-                    if pd.notna(url) and str(url).startswith("http"):
-                        st.image(url, width=35) 
-                    else:
-                        st.write("📦")
-                
-                with c_btn:
-                    # Logica pulsante univoco per riga
-                    if is_in_list:
-                        # Icona carrello disabilitata se già presente
-                        st.button("🛒", key=f"btn_in_{idx}", disabled=True)
-                    else:
-                        # Pulsante di aggiunta con chiamata alla funzione save() corretta (riga 34)
-                        if st.button("➕", key=f"btn_add_{idx}"):
-                            st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
-                            st.session_state.df.at[idx, 'User'] = utente
-                            save() # Regressione evitata: usa save() e non save_to_gsheets()
-                            st.toast(f"✅ {row['Prodotto']} aggiunto!")
-                            st.rerun()
+        with st.container():
+            # Proporzioni 75/15/10: Priorità al testo, foto piccola, bottone quadrato
+            col_txt, col_img, col_btn = st.columns([0.75, 0.15, 0.1])
 
+            with col_txt:
+                # Stile condizionale per testo
+                color = "#a0a0a0" if is_in_list else "#111111"
+                nome_prodotto = f"{row['Prodotto']} (Lista)" if is_in_list else row['Prodotto']
+
+                # L'uso di <span> e .product-name attiva l'ellipsis CSS per nomi lunghi
+                st.markdown(f"<span class='product-name' style='color:{color}'>{nome_prodotto}</span>", unsafe_allow_html=True)
+                st.caption(f"📍 {row['Corsia']}")
+
+            with col_img:
+                url = row.get('URL_Foto', "")
+                # Solo se URL valido, mostra immagine con larghezza fissa da CSS
+                if pd.notna(url) and str(url).startswith("http"):
+                    st.image(url, width=35)
+                else:
+                    st.write("") # Rimosso emoji pacco per risparmiare spazio e mantenere allineamento
+
+            with col_btn:
+                if is_in_list:
+                    # Carrello piccolo e grigio disabilitato
+                    st.button("🛒", key=f"btn_in_{idx}", disabled=True)
+                else:
+                    # Più piccolo e univoco
+                    if st.button("➕", key=f"btn_add_{idx}"):
+                        st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
+                        st.session_state.df.at[idx, 'User'] = utente
+                        save()
+                        st.toast(f"✅ {row['Prodotto']} aggiunto!")
+                        st.rerun()
 # --- TAB 1: LISTA (PIANIFICAZIONE CASA) ---
 with tab1:
     st.subheader("📝 Lista della Spesa")
