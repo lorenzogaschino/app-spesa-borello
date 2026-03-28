@@ -3,60 +3,62 @@ import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
 # 1. Configurazione Pagina (Inizio file)
-st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
-# --- 1. CONFIGURAZIONE E CSS (Sostituisce righe 8-97) ---
-# --- 1. CONFIGURAZIONE E CSS AGGIORNATO ---
+# --- 1. CSS ULTRA-LEGGIBILE PER MOBILE ---
 st.markdown("""
 <style>
+    /* Margini generali */
     .stMainBlockContainer { padding: 1rem !important; }
 
-    /* Nome Prodotto: Dimensioni raddoppiate */
+    /* NOME PRODOTTO: Grande e Nero */
     .product-name-large {
-        font-size: 28px !important;  /* Font molto grande */
+        font-size: 26px !important; 
         font-weight: 800 !important;
-        line-height: 1.2;
-        color: #111111;
+        line-height: 1.1;
+        color: #000000 !important;
         display: block;
+        margin-bottom: 2px;
     }
     
-    /* Info Corsia */
+    /* CORSIA: Media e Grigia */
     .product-cap-large { 
         font-size: 18px !important; 
-        color: #666666; 
-        margin-bottom: 5px;
+        color: #555555 !important; 
+        display: block;
+        margin-bottom: 10px;
     }
 
-    /* Immagine: Raddoppiata */
+    /* IMMAGINE: Grande e definita */
     .cat-img-large {
-        width: 80px !important; 
-        height: 80px !important;
+        width: 100px !important; 
+        height: 100px !important;
         object-fit: cover;
         border-radius: 12px;
-        border: 1px solid #ddd;
+        border: 1px solid #eee;
     }
 
-    /* Bottone + : Grande e facile da cliccare */
+    /* BOTTONE +: Gigante per il pollice */
     .stButton>button {
-        width: 100% !important; /* Occupa tutta la larghezza per essere cliccato bene */
-        height: 60px !important;
-        font-size: 25px !important;
+        width: 100% !important;
+        height: 70px !important;
+        font-size: 28px !important;
+        font-weight: bold !important;
         border-radius: 15px !important;
-        background-color: #f8f9fa !important;
-        border: 2px solid #eee !important;
-        margin-top: 5px;
-        margin-bottom: 20px;
+        background-color: #ffffff !important;
+        border: 2px solid #333 !important;
+        margin-bottom: 30px !important;
     }
 
-    /* Divisore tra prodotti più marcato */
-    hr { margin: 15px 0 !important; border-top: 2px solid #eee !important; }
+    /* Nasconde scrollbar fastidiose */
+    section[data-testid="stSidebar"] { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- TAB 3: CATALOGO (LAYOUT GRANDE) ---
+# --- TAB 3: CATALOGO ---
 with tab3:
     st.write("## 📦 Catalogo")
-    search = st.text_input("Cerca prodotto...", placeholder="Es: Pasta...", key="search_cat_v2")
+    search = st.text_input("Cerca prodotto...", placeholder="Pasta, latte...", key="search_cat_v3")
     
+    # Filtro dati
     df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
     if search:
         df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
@@ -65,28 +67,28 @@ with tab3:
         is_in_list = row['Stato'] == "DA COMPRARE"
         
         with st.container():
-            # RIGA SOPRA: Testo e Foto
-            c_txt, c_img = st.columns([0.75, 0.25])
+            # LAYOUT: Testo a sinistra (70%), Foto a destra (30%)
+            col_left, col_right = st.columns([0.7, 0.3])
             
-            with c_txt:
-                color = "#a0a0a0" if is_in_list else "#111111"
-                txt = f"{row['Prodotto']} (In Lista)" if is_in_list else row['Prodotto']
-                st.markdown(f'<span class="product-name-large" style="color:{color}">{txt}</span>', unsafe_allow_html=True)
-                st.markdown(f'<span class="product-cap-large">📍 Corsia: {row["Corsia"]}</span>', unsafe_allow_html=True)
+            with col_left:
+                color = "#bbbbbb" if is_in_list else "#000000"
+                status_txt = " (Già in lista)" if is_in_list else ""
+                st.markdown(f'<span class="product-name-large" style="color:{color}">{row["Prodotto"]}{status_txt}</span>', unsafe_allow_html=True)
+                st.markdown(f'<span class="product-cap-large">📍 {row["Corsia"]}</span>', unsafe_allow_html=True)
             
-            with c_img:
+            with col_right:
                 url = row.get('URL_Foto', "")
-                if pd.notna(url) and str(url).startswith("http"):
+                if url and str(url).startswith("http"):
                     st.markdown(f'<img src="{url}" class="cat-img-large">', unsafe_allow_html=True)
-            
-            # RIGA SOTTO: Bottone
+
+            # BOTTONE SOTTO (Riga dedicata)
             if is_in_list:
-                st.button("🛒 Già aggiunto", key=f"in_{idx}", disabled=True)
+                st.button("🛒 AGGIUNTO", key=f"btn_in_{idx}", disabled=True)
             else:
-                if st.button("➕ AGGIUNGI ALLA LISTA", key=f"add_{idx}"):
+                if st.button(f"➕ AGGIUNGI", key=f"btn_add_{idx}"):
                     st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
                     st.session_state.df.at[idx, 'User'] = utente
-                    save()
+                    save() # Chiama la funzione di riga 33
                     st.toast(f"✅ {row['Prodotto']} aggiunto!")
                     st.rerun()
             st.divider()
