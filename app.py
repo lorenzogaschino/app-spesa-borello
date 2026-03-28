@@ -32,9 +32,12 @@ if 'df' not in st.session_state:
     st.session_state.df = raw_df
 
 def save():
-    # Pulizia minima per evitare errori di celle vuote nel DB
-    st.session_state.df['Prodotto'] = st.session_state.df['Prodotto'].fillna("Senza Nome")
-    conn.update(worksheet="Catalogo", data=st.session_state.df)
+    # Trasforma i dati in un formato pulito per Google Sheets
+    data_to_save = st.session_state.df.copy()
+    # Converte eventuali valori nulli in stringhe vuote per evitare errori API
+    data_to_save = data_to_save.fillna("")
+    # Aggiorna il foglio
+    conn.update(worksheet="Catalogo", data=data_to_save)
 
 # 3. Header
 col_logo, col_user = st.columns([0.2, 0.8])
