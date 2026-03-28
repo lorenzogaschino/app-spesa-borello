@@ -43,6 +43,7 @@ tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 with tab1:
     st.subheader("📝 Lista della Spesa")
     
+    # Sezione aggiunta manuale
     with st.expander("➕ Aggiungi al volo", expanded=False):
         c_n, c_c = st.columns([0.6, 0.4])
         nuovo_p = c_n.text_input("Cosa manca?", key="k_manual_name")
@@ -50,7 +51,14 @@ with tab1:
         
         if st.button("Inserisci in lista", key="k_btn_manual_add", use_container_width=True):
             if nuovo_p:
-                new_row = pd.DataFrame([{"Prodotto": nuovo_p, "Corsia": corsia_p, "Stato": "DA COMPRARE", "User": utente, "Tipo": "Manuale", "URL_Foto": ""}])
+                new_row = pd.DataFrame([{
+                    "Prodotto": nuovo_p, 
+                    "Corsia": corsia_p, 
+                    "Stato": "DA COMPRARE", 
+                    "User": utente, 
+                    "Tipo": "Manuale", 
+                    "URL_Foto": ""
+                }])
                 st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
                 save()
                 st.rerun()
@@ -58,27 +66,41 @@ with tab1:
     st.divider()
 
     if 'df' in st.session_state:
-        # Filtriamo i prodotti "DA COMPRARE"
+        # Recuperiamo i prodotti in lista
         lista_edit = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy()
         
         if lista_edit.empty:
             st.info("La tua lista è vuota.")
         else:
             for idx, row in lista_edit.iterrows():
-                with st.container(border=True):
-                    col_info, col_del = st.columns([0.8, 0.2])
+                with st.container():
+                    # Usiamo la stessa classe CSS del catalogo
+                    st.markdown('<div class="cat-row">', unsafe_allow_html=True)
+                    
+                    col_info, col_img = st.columns([0.7, 0.3])
+                    
                     with col_info:
-                        st.write(f"**{row['Prodotto']}**")
-                        st.caption(f"👤 {row['User']} | 📍 {row['Corsia']}")
-                    with col_del:
-                        # Chiave univoca 'L_' per Tab 1
-                        if st.button("❌", key=f"L_del_{idx}"):
-                            if row['Tipo'] == "Manuale":
-                                st.session_state.df = st.session_state.df.drop(idx).reset_index(drop=True)
-                            else:
-                                st.session_state.df.at[idx, 'Stato'] = ""
-                            save()
-                            st.rerun()
+                        st.markdown(f'<span class="cat-name">{row["Prodotto"]}</span>', unsafe_allow_html=True)
+                        st.markdown(f'<span class="cat-cap">📍 Corsia: {row["Corsia"]}</span>', unsafe_allow_html=True)
+                        # Dato extra dell'utente
+                        st.caption(f"👤 Aggiunto da: {row.get('User', 'Utente')}")
+                    
+                    with col_img:
+                        url = row.get('URL_Foto', "")
+                        if pd.notna(url) and str(url).startswith("http"):
+                            st.markdown(f'<img src="{url}" class="cat-img">', unsafe_allow_html=True)
+                    
+                    # Pulsante di rimozione (Coerente con lo stile del catalogo)
+                    if st.button("❌ RIMUOVI DALLA LISTA", key=f"L_del_{idx}", use_container_width=True):
+                        if row.get('Tipo') == "Manuale":
+                            st.session_state.df = st.session_state.df.drop(idx).reset_index(drop=True)
+                        else:
+                            st.session_state.df.at[idx, 'Stato'] = ""
+                        save()
+                        st.rerun()
+                    
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.divider()
 
 # ==========================================
 # --- TAB 2: SPESA (IN NEGOZIO)          ---
