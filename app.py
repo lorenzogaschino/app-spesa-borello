@@ -73,58 +73,50 @@ with col_user:
 # 4. MENU TABS
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
-# --- TAB 3: CATALOGO (VERSIONE 1.1) ---
+# --- TAB 3: CATALOGO (VERSIONE COMPATTA 1.1) ---
 with tab3:
-    st.subheader("📦 Catalogo Prodotti")
+    st.subheader("📦 Catalogo")
+    search = st.text_input("Cerca...", placeholder="Pasta...", key="cat_search_v1.1")
     
-    search = st.text_input("Cerca nel database...", placeholder="Es: Pasta...", key="catalog_search_v1")
-    
-    # 1. Preparazione dati: Alfabetico e solo prodotti Catalogo
-    df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy()
-    df_cat = df_cat.sort_values(by="Prodotto")
-    
+    df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
     if search:
         df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
 
     st.divider()
 
-    # 2. Visualizzazione a lista continua
     for idx, row in df_cat.iterrows():
-        # Verifichiamo se il prodotto è già stato selezionato
         is_in_list = row['Stato'] == "DA COMPRARE"
         
-        # Container con stile condizionale (grigetto se già in lista)
+        # Usiamo un container per ogni riga
         with st.container():
-            c_info, c_img, c_btn = st.columns([0.65, 0.15, 0.2])
+            # Rapporto colonne: testo largo, immagine piccola, bottone piccolo
+            c_info, c_img, c_btn = st.columns([0.6, 0.2, 0.2])
             
             with c_info:
                 if is_in_list:
-                    # Testo grigio e sbarrato/opaco per indicare che c'è già
-                    st.markdown(f"<p style='color: #a0a0a0; font-size: 18px;'>{row['Prodotto']} (In Lista)</p>", unsafe_allow_html=True)
+                    st.markdown(f"<p style='color: #a0a0a0; font-size: 16px; margin-bottom:0;'>{row['Prodotto']} (In Lista)</p>", unsafe_allow_html=True)
                 else:
-                    # Testo standard grande
-                    st.markdown(f"<p class='product-name'>{row['Prodotto']}</p>", unsafe_allow_html=True)
-                st.caption(f"📍 Corsia {row['Corsia']}")
+                    st.markdown(f"<p class='product-name' style='margin-bottom:0;'>{row['Prodotto']}</p>", unsafe_allow_html=True)
+                st.caption(f"📍 {row['Corsia']}")
             
             with c_img:
                 url = row.get('URL_Foto', "")
                 if pd.notna(url) and str(url).startswith("http"):
-                    st.image(url, width=50)
+                    # Immagine piccola e con bordi arrotondati
+                    st.image(url, width=45)
                 else:
                     st.write("📦")
             
             with c_btn:
                 if is_in_list:
-                    # Icona carrello a destra (disabilitata)
                     st.button("🛒", key=f"btn_in_{idx}", disabled=True)
                 else:
-                    # Bottone attivo per aggiungere
                     if st.button("➕", key=f"btn_add_{idx}"):
                         st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
                         st.session_state.df.at[idx, 'User'] = utente
                         save()
                         st.toast(f"✅ AGGIUNTO: {row['Prodotto']}")
-                        st.rerun() # Ricarica per aggiornare l'aspetto (grigetto)
+                        st.rerun()
 
 # --- TAB 1: LISTA (PIANIFICAZIONE CASA) ---
 with tab1:
