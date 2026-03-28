@@ -2,47 +2,97 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
-# 1. Configurazione Pagina
+# 1. Configurazione Pagina (Inizio file)
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
-# CSS Ultra-Compatto per Mobile (Forza orizzontale e rimuove scroll)
+# CSS Ultra-Mobile: Forza orizzontale, niente scorrimento, font compatti
 st.markdown("""
 <style>
-    .stMainBlockContainer { padding: 0.5rem 0.5rem !important; overflow-x: hidden !important; }
-    
-    /* Forza le colonne sulla stessa riga */
+    /* A. Gestione Globale Contenitore e Margini */
+    .stMainBlockContainer {
+        padding-left: 0.5rem !important;  /* Margini minimi ai lati */
+        padding-right: 0.5rem !important;
+        overflow-x: hidden !important; /* Disabilita lo scroll orizzontale globale */
+    }
+
+    /* B. Forza le colonne a stare su una riga - Senza scorrimento */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
-        flex-wrap: nowrap !important;
+        flex-wrap: nowrap !important; /* Impedisce l'andata a capo */
+        gap: 0.2rem !important; /* Spazio piccolissimo tra elementi */
         align-items: center !important;
-        gap: 0.3rem !important;
+        width: 100% !important; /* Occupa tutta la larghezza */
+        min-width: 0 !important; /* Importante per flex-shrink */
     }
 
-    [data-testid="column"] { min-width: 0px !important; flex: 1 1 auto !important; overflow: hidden !important; }
+    [data-testid="column"] {
+        width: auto !important;
+        flex: 1 1 auto !important; /* Permette alle colonne di ridimensionarsi */
+        min-width: 0px !important; /* Permette il ridimensionamento sotto la larghezza del contenuto */
+        overflow: hidden !important; /* Impedisce al contenuto di forzare la larghezza */
+    }
 
-    /* Testo Prodotto: puntini sospensivi se troppo lungo */
+    /* C. Stile Prodotti: Compatto, font più piccoli, ellipses */
     .product-name {
         font-size: 15px !important;
         font-weight: 600 !important;
+        color: #111111;
+        margin-bottom: 0px !important;
         line-height: 1.1;
+        /* Gestione nomi troppo lunghi: mette i puntini se non ci sta */
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         display: block;
     }
 
-    /* Immagini e Bottoni */
-    [data-testid="stImage"] img { max-width: 35px !important; height: auto !important; }
-    .stButton>button { 
-        padding: 0px !important; height: 35px !important; width: 35px !important; 
-        min-width: 35px !important; border-radius: 8px;
+    /* Corsia */
+    [data-testid="stCaptionContainer"] {
+        font-size: 11px !important;
+        margin-top: 0px !important;
     }
 
-    /* Tabs e Toast */
-    .stTabs [data-baseweb="tab"] { height: 40px; font-size: 12px; padding: 0 5px; }
+    /* Immagini */
+    [data-testid="stImage"] img {
+        max-width: 35px !important; /* Larghezza massima dell'immagine */
+        height: auto !important;
+    }
+
+    /* D. Tab Compatti (Selezionatore Utente) */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 4px;
+        padding-top: 0;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 38px;
+        border-radius: 8px;
+        flex-grow: 1;
+        font-size: 12px;
+        padding-left: 5px;
+        padding-right: 5px;
+    }
     .stTabs [aria-selected="true"] { background-color: #4b5320 !important; color: white !important; }
-    [data-testid="stToast"] { background-color: #2e7d32 !important; color: white !important; width: 100% !important; }
+
+    /* E. Bottoni Quadrati Compatti */
+    .stButton>button {
+        padding: 0px !important;
+        height: 35px !important;
+        width: 35px !important;
+        min-width: 35px !important;
+        border-radius: 10px;
+        background-color: transparent;
+        border: 1px solid #ccc;
+    }
+    .stButton>button:disabled { background-color: #f0f0f0; }
+
+    /* F. Toast e Altro */
+    [data-testid="stToast"] {
+        background-color: #2e7d32 !important;
+        color: white !important;
+        width: 100% !important;
+    }
+    .stSelectbox { font-size: 14px; }
 </style>
 """, unsafe_allow_html=True)
 
