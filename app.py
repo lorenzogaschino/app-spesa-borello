@@ -61,10 +61,19 @@ with tab3:
     st.write("## 📦 Catalogo")
     search = st.text_input("Cerca prodotto...", placeholder="Pasta, latte...", key="search_cat_v3")
     
-    # Filtro dati
-    df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
-    if search:
-        df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
+    # Verifichiamo che i dati esistano prima di filtrarli
+    if 'df' in st.session_state:
+        df_cat = st.session_state.df.copy()
+        
+        # Escludi i manuali e ordina
+        df_cat = df_cat[df_cat['Tipo'] != "Manuale"].sort_values("Prodotto")
+        
+        # Applica ricerca se presente
+        if search:
+            df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
+    else:
+        st.error("Dati non caricati. Ricarica la pagina.")
+        df_cat = [] # Lista vuota per non bloccare il ciclo sotto
 
     for idx, row in df_cat.iterrows():
         is_in_list = row['Stato'] == "DA COMPRARE"
