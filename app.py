@@ -59,36 +59,44 @@ if 'df' not in st.session_state:
 # UTENTE (Lo mettiamo qui come variabile semplice, non nella sidebar)
 utente = "Lorenzo" # O Maria, puoi cambiarlo qui manualmente o rimetterlo dove preferisci
 
-# 4. DEFINIZIONE TAB (Visibili in alto)
+# --- 4. DEFINIZIONE TAB (Assicurati che questa riga sia esterna a ogni altro blocco) ---
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
 with tab1:
-    st.write("## 🏠 La tua Lista")
-    # Qui andrà il codice della lista
+    st.markdown("### 🏠 Prodotti da comprare")
+    # Inserisci qui il tuo codice della lista. 
+    # Esempio minimo per non far sparire il tab:
+    st.info("La tua lista apparirà qui.")
 
 with tab2:
-    st.write("## 🛒 Spesa in corso")
-    # Qui andrà il codice della spesa
+    st.markdown("### 🛒 Spesa in corso")
+    # Esempio minimo per non far sparire il tab:
+    st.info("L'interfaccia di spesa apparirà qui.")
 
 # --- TAB 3: CATALOGO ---
 with tab3:
-    st.write("## 📦 Catalogo")
-    search = st.text_input("Cerca prodotto...", placeholder="Es: Pasta...", key="search_cat_v5")
+    st.markdown("### 📦 Catalogo Prodotti")
+    
+    # Ricerca
+    search = st.text_input("Cerca prodotto...", placeholder="Es: Pasta...", key="search_cat_final_v6")
     
     if 'df' in st.session_state:
-        # Prepariamo i dati per la visualizzazione
+        # Filtro e ordinamento
         df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
         
         if search:
             df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
 
+        # Rendering prodotti
         for idx, row in df_cat.iterrows():
             is_in_list = row['Stato'] == "DA COMPRARE"
             
+            # Container per lo stile gigante
             with st.container():
                 st.markdown('<div class="cat-row">', unsafe_allow_html=True)
                 
                 col_left, col_right = st.columns([0.7, 0.3])
+                
                 with col_left:
                     color = "#bbbbbb" if is_in_list else "#000000"
                     st.markdown(f'<span class="cat-name" style="color:{color}">{row["Prodotto"]}</span>', unsafe_allow_html=True)
@@ -98,12 +106,12 @@ with tab3:
                     url = row.get('URL_Foto', "")
                     if url and str(url).startswith("http"):
                         st.markdown(f'<img src="{url}" class="cat-img">', unsafe_allow_html=True)
-
-                # Bottone Azione
+                
+                # Bottone (Sotto testo e foto)
                 if is_in_list:
-                    st.button("🛒 IN LISTA", key=f"btn_in_{idx}", disabled=True)
+                    st.button("🛒 IN LISTA", key=f"btn_in_cat_{idx}", disabled=True)
                 else:
-                    if st.button(f"➕ AGGIUNGI", key=f"btn_add_{idx}"):
+                    if st.button(f"➕ AGGIUNGI", key=f"btn_add_cat_{idx}"):
                         st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
                         st.session_state.df.at[idx, 'User'] = utente
                         save()
