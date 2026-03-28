@@ -52,10 +52,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- TAB 3: CATALOGO ---
+# --- TAB 3: CATALOGO (LAYOUT GRANDE) ---
 with tab3:
-    st.write("### 📦 Catalogo")
-    search = st.text_input("Cerca...", placeholder="Es: Pasta...", key="search_cat")
+    st.write("## 📦 Catalogo")
+    search = st.text_input("Cerca prodotto...", placeholder="Es: Pasta...", key="search_cat_v2")
     
     df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
     if search:
@@ -64,39 +64,32 @@ with tab3:
     for idx, row in df_cat.iterrows():
         is_in_list = row['Stato'] == "DA COMPRARE"
         
-        # Creiamo la riga con HTML per testo e foto, e una colonna piccola solo per il bottone
-        col_main, col_btn = st.columns([0.83, 0.17])
-        
-        with col_main:
-            color = "#a0a0a0" if is_in_list else "#111111"
-            txt = f"{row['Prodotto']} (In Lista)" if is_in_list else row['Prodotto']
-            url = row.get('URL_Foto', "")
+        with st.container():
+            # RIGA SOPRA: Testo e Foto
+            c_txt, c_img = st.columns([0.75, 0.25])
             
-            # HTML per allineare Testo e Foto sulla stessa riga "blindata"
-            img_html = f'<img src="{url}" class="cat-img">' if (pd.notna(url) and str(url).startswith("http")) else '<div style="width:35px"></div>'
+            with c_txt:
+                color = "#a0a0a0" if is_in_list else "#111111"
+                txt = f"{row['Prodotto']} (In Lista)" if is_in_list else row['Prodotto']
+                st.markdown(f'<span class="product-name-large" style="color:{color}">{txt}</span>', unsafe_allow_html=True)
+                st.markdown(f'<span class="product-cap-large">📍 Corsia: {row["Corsia"]}</span>', unsafe_allow_html=True)
             
-            st.markdown(f"""
-                <table class="cat-table">
-                    <tr>
-                        <td class="cat-td-txt">
-                            <span class="product-name" style="color:{color}">{txt}</span>
-                            <span class="product-cap">📍 {row['Corsia']}</span>
-                        </td>
-                        <td class="cat-td-img">{img_html}</td>
-                    </tr>
-                </table>
-            """, unsafe_allow_html=True)
-        
-        with col_btn:
+            with c_img:
+                url = row.get('URL_Foto', "")
+                if pd.notna(url) and str(url).startswith("http"):
+                    st.markdown(f'<img src="{url}" class="cat-img-large">', unsafe_allow_html=True)
+            
+            # RIGA SOTTO: Bottone
             if is_in_list:
-                st.button("🛒", key=f"in_{idx}", disabled=True)
+                st.button("🛒 Già aggiunto", key=f"in_{idx}", disabled=True)
             else:
-                if st.button("➕", key=f"add_{idx}"):
+                if st.button("➕ AGGIUNGI ALLA LISTA", key=f"add_{idx}"):
                     st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
                     st.session_state.df.at[idx, 'User'] = utente
                     save()
-                    st.toast(f"✅ Aggiunto!")
+                    st.toast(f"✅ {row['Prodotto']} aggiunto!")
                     st.rerun()
+            st.divider()
                     
 # --- TAB 1: LISTA (PIANIFICAZIONE CASA) ---
 with tab1:
