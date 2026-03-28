@@ -119,45 +119,57 @@ if 'df' not in st.session_state:
 # 3. Header e Navigazione
 utente = st.selectbox("Utente", ["Lorenzo", "Maria"], label_visibility="collapsed")
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
-# --- TAB 3: CATALOGO ---
+# --- TAB 3: CATALOGO (VERSIONE COMPATTA MOBILE DEFINTIVA V1.2) ---
 with tab3:
-    st.write("### 📦 Catalogo")
-    search = st.text_input("Cerca...", placeholder="Es: Pasta...", key="search_cat")
-    
-    df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
+    # Ridotto a st.write per risparmiare altezza
+    st.write("📦 **Catalogo**")
+
+    # Ricerca con altezza ridotta (key univoca v1.2)
+    search = st.text_input("Cerca nel database...", placeholder="Es: Pasta, Mele...", key="cat_search_v1.2_def")
+
+    # 1. Preparazione Dati: Alfabetico e solo Catalogo
+    df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy()
+    df_cat = df_cat.sort_values(by="Prodotto")
+
     if search:
         df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
 
-    st.divider()
-
+    # 2. Visualizzazione prodotti
     for idx, row in df_cat.iterrows():
         is_in_list = row['Stato'] == "DA COMPRARE"
-        with st.container():
-            # Proporzioni 70% testo, 15% foto, 15% bottone
-            c_txt, c_img, c_btn = st.columns([0.7, 0.15, 0.15])
-            
-            with c_txt:
-                color = "#a0a0a0" if is_in_list else "#111111"
-                txt = f"{row['Prodotto']} (In Lista)" if is_in_list else row['Prodotto']
-                st.markdown(f"<span class='product-name' style='color:{color}'>{txt}</span>", unsafe_allow_html=True)
-                st.caption(f"📍 {row['Corsia']}")
-            
-            with c_img:
-                url = row.get('URL_Foto', "")
-                if pd.notna(url) and str(url).startswith("http"):
-                    st.image(url)
-                else:
-                    st.write("")
 
-            with c_btn:
-                if is_in_list:
-                    st.button("🛒", key=f"in_{idx}", disabled=True)
+        with st.container():
+            # Proporzioni 75/15/10: Priorità al testo, foto piccola, bottone quadrato
+            col_txt, col_img, col_btn = st.columns([0.75, 0.15, 0.1])
+
+            with col_txt:
+                # Stile condizionale per testo
+                color = "#a0a0a0" if is_in_list else "#111111"
+                nome_prodotto = f"{row['Prodotto']} (Lista)" if is_in_list else row['Prodotto']
+
+                # L'uso di <span> e .product-name attiva l'ellipsis CSS per nomi lunghi
+                st.markdown(f"<span class='product-name' style='color:{color}'>{nome_prodotto}</span>", unsafe_allow_html=True)
+                st.caption(f"📍 {row['Corsia']}")
+
+            with col_img:
+                url = row.get('URL_Foto', "")
+                # Solo se URL valido, mostra immagine con larghezza fissa da CSS
+                if pd.notna(url) and str(url).startswith("http"):
+                    st.image(url, width=35)
                 else:
-                    if st.button("➕", key=f"add_{idx}"):
+                    st.write("") # Rimosso emoji pacco per risparmiare spazio e mantenere allineamento
+
+            with col_btn:
+                if is_in_list:
+                    # Carrello piccolo e grigio disabilitato
+                    st.button("🛒", key=f"btn_in_{idx}", disabled=True)
+                else:
+                    # Più piccolo e univoco
+                    if st.button("➕", key=f"btn_add_{idx}"):
                         st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
                         st.session_state.df.at[idx, 'User'] = utente
                         save()
-                        st.toast(f"✅ Aggiunto!")
+                        st.toast(f"✅ {row['Prodotto']} aggiunto!")
                         st.rerun()
 # --- TAB 1: LISTA (PIANIFICAZIONE CASA) ---
 with tab1:
