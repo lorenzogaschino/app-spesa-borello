@@ -5,10 +5,9 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Configurazione
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
-# 2. CSS 
+# 2. CSS (Rimosso il padding che nascondeva i tab in alto!)
 st.markdown("""
 <style>
-    .stMainBlockContainer { padding: 1rem !important; }
     .cat-name { font-size: 26px !important; font-weight: 800; color: #000; display: block; }
     .cat-cap { font-size: 18px !important; color: #555; display: block; margin-bottom: 10px; }
     .cat-img { width: 100px !important; height: 100px !important; object-fit: cover; border-radius: 12px; }
@@ -35,7 +34,7 @@ if 'df' not in st.session_state:
 
 utente = "Lorenzo"
 
-# --- 4. DEFINIZIONE TAB (Scritta UNA SOLA VOLTA) ---
+# --- 4. DEFINIZIONE TAB ---
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
 # ==========================================
