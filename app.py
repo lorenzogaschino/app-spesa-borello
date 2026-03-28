@@ -2,50 +2,29 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
-# 1. Configurazione Pagina
+# 1. Configurazione
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
-# 2. CSS - Pulito da ogni carattere speciale
+# 2. CSS (Separato per non rompere i Tab)
 st.markdown("""
 <style>
     .stMainBlockContainer { padding: 1rem !important; }
+    .cat-name { font-size: 26px !important; font-weight: 800; color: #000; display: block; }
+    .cat-cap { font-size: 18px !important; color: #555; display: block; margin-bottom: 10px; }
+    .cat-img { width: 100px !important; height: 100px !important; object-fit: cover; border-radius: 12px; }
     
-    /* Classi per il Catalogo */
-    .cat-name {
-        font-size: 26px !important;
-        font-weight: 800 !important;
-        line-height: 1.1;
-        color: #000000 !important;
-        display: block;
-    }
-    .cat-cap {
-        font-size: 18px !important;
-        color: #555555 !important;
-        display: block;
-        margin-bottom: 10px;
-    }
-    .cat-img {
-        width: 100px !important;
-        height: 100px !important;
-        object-fit: cover;
-        border-radius: 12px;
-        border: 1px solid #eee;
-    }
-
-    /* Stile Bottoni Giganti - Limitati SOLO alla riga del catalogo */
+    /* Stile specifico solo per i bottoni nel catalogo */
     div.cat-row div.stButton > button {
         width: 100% !important;
         height: 70px !important;
-        font-size: 28px !important;
+        font-size: 25px !important;
         font-weight: bold !important;
-        border-radius: 15px !important;
-        background-color: #ffffff !important;
         border: 2px solid #333 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Connessione e Dati
+# 3. Dati e Connessione
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def save():
@@ -55,6 +34,50 @@ if 'df' not in st.session_state:
     st.session_state.df = conn.read(worksheet="Catalogo")
 
 utente = "Lorenzo"
+
+# 4. TAB - DEFINIZIONE (TUTTI A INIZIO RIGA)
+tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
+
+with tab1:
+    st.markdown("### 🏠 Prodotti da comprare")
+    st.write("Contenuto Lista")
+
+with tab2:
+    st.markdown("### 🛒 Spesa in corso")
+    st.write("Contenuto Spesa")
+
+with tab3:
+    st.markdown("### 📦 Catalogo")
+    search = st.text_input("Cerca...", key="search_v9")
+    
+    if 'df' in st.session_state:
+        df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
+        if search:
+            df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
+
+        for idx, row in df_cat.iterrows():
+            is_in_list = row['Stato'] == "DA COMPRARE"
+            with st.container():
+                st.markdown('<div class="cat-row">', unsafe_allow_html=True)
+                c1, c2 = st.columns([0.7, 0.3])
+                with c1:
+                    st.markdown(f'<span class="cat-name">{row["Prodotto"]}</span>', unsafe_allow_html=True)
+                    st.markdown(f'<span class="cat-cap">📍 {row["Corsia"]}</span>', unsafe_allow_html=True)
+                with c2:
+                    url = row.get('URL_Foto', "")
+                    if pd.notna(url) and str(url).startswith("http"):
+                        st.markdown(f'<img src="{url}" class="cat-img">', unsafe_allow_html=True)
+                
+                if is_in_list:
+                    st.button("🛒 IN LISTA", key=f"in_{idx}", disabled=True)
+                else:
+                    if st.button("➕ AGGIUNGI", key=f"add_{idx}"):
+                        st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
+                        st.session_state.df.at[idx, 'User'] = utente
+                        save()
+                        st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.divider()
 
 # --- 4. DEFINIZIONE TAB (Questa riga deve essere a inizio riga, senza spazi) ---
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
