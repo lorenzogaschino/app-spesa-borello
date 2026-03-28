@@ -5,36 +5,51 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Configurazione Pagina
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
-# 1. Configurazione Pagina e CSS Migliorato per Mobile
+# 1. Configurazione Pagina e CSS Ultra-Compatto per Mobile
 st.markdown("""
 <style>
-    /* Forza le colonne a stare sulla stessa riga anche su mobile */
+    /* 1. FORZA ORIZZONTALE E ELIMINA SCROLL */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
+        gap: 0.5rem !important; /* Spazio minimo tra colonne */
     }
 
-    /* Gestione delle singole colonne per evitare il collasso */
+    /* 2. PROPORZIONI FISSE COLONNE */
     [data-testid="column"] {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
+        width: auto !important;
+        flex-math: none !important;
+        flex-shrink: 1 !important;
         min-width: 0px !important;
     }
 
-    /* Stile dei Tab */
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
-    .stTabs [data-baseweb="tab"] { 
-        height: 45px; background-color: #f0f2f6; 
-        border-radius: 10px; flex-grow: 1; font-size: 14px;
+    /* 3. TOAST E TESTO */
+    [data-testid="stToast"] {
+        background-color: #2e7d32 !important;
+        color: white !important;
     }
-    .stTabs [aria-selected="true"] { background-color: #4b5320 !important; color: white !important; }
     
-    /* Bottoni */
-    .stButton>button { width: 100%; border-radius: 10px; }
+    .product-name {
+        font-size: 16px !important; /* Leggermente ridotto per stare in riga */
+        font-weight: 600 !important;
+        line-height: 1.2;
+        display: block;
+    }
 
+    /* 4. TAB E BOTTONI */
+    .stTabs [data-baseweb="tab-list"] { gap: 4px; }
+    .stTabs [data-baseweb="tab"] { 
+        height: 40px; border-radius: 8px; flex-grow: 1; font-size: 12px;
+    }
+    .stButton>button { 
+        padding: 0px 5px !important; 
+        height: 35px !important;
+        min-width: 35px !important;
+    }
+</style>
+""", unsafe_allow_html=True)
     /* NUOVE REGOLE V1.1: Toast e Font */
     [data-testid="stToast"] {
         background-color: #2e7d32 !important;
@@ -98,26 +113,23 @@ with tab3:
 
     st.divider()
 
-    for idx, row in df_cat.iterrows():
+  for idx, row in df_cat.iterrows():
         is_in_list = row['Stato'] == "DA COMPRARE"
         
-        # Usiamo un container per ogni riga
         with st.container():
-            # Rapporto colonne: testo largo, immagine piccola, bottone piccolo
-            c_info, c_img, c_btn = st.columns([0.6, 0.2, 0.2])
+            # Proporzioni: 70% testo, 15% immagine, 15% bottone
+            c_info, c_img, c_btn = st.columns([0.65, 0.17, 0.18])
             
             with c_info:
-                if is_in_list:
-                    st.markdown(f"<p style='color: #a0a0a0; font-size: 16px; margin-bottom:0;'>{row['Prodotto']} (In Lista)</p>", unsafe_allow_html=True)
-                else:
-                    st.markdown(f"<p class='product-name' style='margin-bottom:0;'>{row['Prodotto']}</p>", unsafe_allow_html=True)
+                color = "#a0a0a0" if is_in_list else "#000000"
+                label = " (In Lista)" if is_in_list else ""
+                st.markdown(f"<span class='product-name' style='color:{color}'>{row['Prodotto']}{label}</span>", unsafe_allow_html=True)
                 st.caption(f"📍 {row['Corsia']}")
             
             with c_img:
                 url = row.get('URL_Foto', "")
                 if pd.notna(url) and str(url).startswith("http"):
-                    # Immagine piccola e con bordi arrotondati
-                    st.image(url, width=45)
+                    st.image(url, width=35) # Immagine più piccola
                 else:
                     st.write("📦")
             
@@ -129,7 +141,7 @@ with tab3:
                         st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
                         st.session_state.df.at[idx, 'User'] = utente
                         save()
-                        st.toast(f"✅ AGGIUNTO: {row['Prodotto']}")
+                        st.toast(f"✅ {row['Prodotto']} aggiunto!")
                         st.rerun()
 
 # --- TAB 1: LISTA (PIANIFICAZIONE CASA) ---
