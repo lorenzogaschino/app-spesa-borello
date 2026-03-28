@@ -4,31 +4,28 @@ from streamlit_gsheets import GSheetsConnection
 
 # 1. Configurazione Pagina (Inizio file)
 # --- 1. CSS ULTRA-LEGGIBILE PER MOBILE ---
+# --- 1. CSS MIRATO PER MOBILE ---
 st.markdown("""
 <style>
-    /* Margini generali */
     .stMainBlockContainer { padding: 1rem !important; }
 
-    /* NOME PRODOTTO: Grande e Nero */
-    .product-name-large {
+    /* Stili specifici per il Catalogo (usano il prefisso .cat-row) */
+    .cat-name {
         font-size: 26px !important; 
         font-weight: 800 !important;
         line-height: 1.1;
         color: #000000 !important;
         display: block;
-        margin-bottom: 2px;
     }
     
-    /* CORSIA: Media e Grigia */
-    .product-cap-large { 
+    .cat-cap { 
         font-size: 18px !important; 
         color: #555555 !important; 
         display: block;
         margin-bottom: 10px;
     }
 
-    /* IMMAGINE: Grande e definita */
-    .cat-img-large {
+    .cat-img {
         width: 100px !important; 
         height: 100px !important;
         object-fit: cover;
@@ -36,8 +33,8 @@ st.markdown("""
         border: 1px solid #eee;
     }
 
-    /* BOTTONE +: Gigante per il pollice */
-    .stButton>button {
+    /* Questo stile si applica SOLO ai bottoni dentro il Catalogo */
+    div.cat-row div.stButton > button {
         width: 100% !important;
         height: 70px !important;
         font-size: 28px !important;
@@ -45,11 +42,15 @@ st.markdown("""
         border-radius: 15px !important;
         background-color: #ffffff !important;
         border: 2px solid #333 !important;
-        margin-bottom: 30px !important;
+        margin-bottom: 5px !important;
     }
 
-    /* Nasconde scrollbar fastidiose */
-    section[data-testid="stSidebar"] { display: none; }
+    /* Bottoni normali per Tab 1 e 2 (Lista e Spesa) */
+    div.stButton > button {
+        height: auto;
+        width: auto;
+        font-size: 14px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -59,11 +60,9 @@ tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 # --- TAB 3: CATALOGO ---
 with tab3:
     st.write("## 📦 Catalogo")
-    search = st.text_input("Cerca prodotto...", placeholder="Pasta, latte...", key="search_cat_v3")
+    search = st.text_input("Cerca prodotto...", placeholder="Pasta, latte...", key="search_cat_v4")
     
-    # Controllo se il dataframe esiste
     if 'df' in st.session_state and isinstance(st.session_state.df, pd.DataFrame):
-        # Filtro dati
         df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
         if search:
             df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
@@ -71,34 +70,33 @@ with tab3:
         for idx, row in df_cat.iterrows():
             is_in_list = row['Stato'] == "DA COMPRARE"
             
+            # Usiamo un container con una classe CSS specifica
             with st.container():
-                # LAYOUT: Testo a sinistra (70%), Foto a destra (30%)
-                col_left, col_right = st.columns([0.7, 0.3])
+                st.markdown('<div class="cat-row">', unsafe_allow_html=True)
                 
+                col_left, col_right = st.columns([0.7, 0.3])
                 with col_left:
                     color = "#bbbbbb" if is_in_list else "#000000"
-                    status_txt = " (Già in lista)" if is_in_list else ""
-                    st.markdown(f'<span class="product-name-large" style="color:{color}">{row["Prodotto"]}{status_txt}</span>', unsafe_allow_html=True)
-                    st.markdown(f'<span class="product-cap-large">📍 {row["Corsia"]}</span>', unsafe_allow_html=True)
+                    st.markdown(f'<span class="cat-name" style="color:{color}">{row["Prodotto"]}</span>', unsafe_allow_html=True)
+                    st.markdown(f'<span class="cat-cap">📍 {row["Corsia"]}</span>', unsafe_allow_html=True)
                 
                 with col_right:
                     url = row.get('URL_Foto', "")
                     if url and str(url).startswith("http"):
-                        st.markdown(f'<img src="{url}" class="cat-img-large">', unsafe_allow_html=True)
+                        st.markdown(f'<img src="{url}" class="cat-img">', unsafe_allow_html=True)
 
-                # BOTTONE SOTTO (Riga dedicata)
                 if is_in_list:
-                    st.button("🛒 AGGIUNTO", key=f"btn_in_{idx}", disabled=True)
+                    st.button("🛒 IN LISTA", key=f"btn_in_{idx}", disabled=True)
                 else:
                     if st.button(f"➕ AGGIUNGI", key=f"btn_add_{idx}"):
                         st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
                         st.session_state.df.at[idx, 'User'] = utente
-                        save() # Chiama la funzione definita a riga 33
+                        save()
                         st.toast(f"✅ {row['Prodotto']} aggiunto!")
                         st.rerun()
+                
+                st.markdown('</div>', unsafe_allow_html=True)
                 st.divider()
-    else:
-        st.error("Dati non caricati. Controlla la connessione a Google Sheets.")
                     
 # --- TAB 1: LISTA (PIANIFICAZIONE CASA) ---
 with tab1:
