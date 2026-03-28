@@ -5,36 +5,50 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Configurazione Pagina
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
-# CSS Migliorato per Mobile
-[data-testid="column"] {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    min-width: 0px !important; /* Impedisce alle colonne di collassare */
-}
+# 1. Configurazione Pagina e CSS Migliorato per Mobile
+st.markdown("""
+<style>
+    /* Forza le colonne a stare sulla stessa riga anche su mobile */
+    [data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+    }
 
-[data-testid="stHorizontalBlock"] {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-}
+    /* Gestione delle singole colonne per evitare il collasso */
+    [data-testid="column"] {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        min-width: 0px !important;
+    }
+
+    /* Stile dei Tab */
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
+    .stTabs [data-baseweb="tab"] { 
+        height: 45px; background-color: #f0f2f6; 
+        border-radius: 10px; flex-grow: 1; font-size: 14px;
+    }
+    .stTabs [aria-selected="true"] { background-color: #4b5320 !important; color: white !important; }
     
-    /* NUOVE REGOLE V1.1 */
-    .stToast {
+    /* Bottoni */
+    .stButton>button { width: 100%; border-radius: 10px; }
+
+    /* NUOVE REGOLE V1.1: Toast e Font */
+    [data-testid="stToast"] {
         background-color: #2e7d32 !important;
         color: white !important;
+        width: 100% !important;
     }
-    [data-testid="stToast"] {
-        width: 100% !important; /* Su mobile 150% potrebbe uscire dallo schermo, 100% è più sicuro */
-    }
+    
     .product-name {
         font-size: 18px !important;
         font-weight: 600 !important;
         margin-bottom: 0px;
     }
-    </style>
-    """, unsafe_allow_html=True)
+</style>
+""", unsafe_allow_html=True)
 
 # 2. Connessione e Gestione Dati
 conn = st.connection("gsheets", type=GSheetsConnection)
