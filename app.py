@@ -56,25 +56,27 @@ if 'df' not in st.session_state:
 
 utente = "Lorenzo"
 
-# 4. DEFINIZIONE TAB
+# --- 4. DEFINIZIONE TAB (Questa riga deve essere a inizio riga, senza spazi) ---
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
 with tab1:
     st.markdown("### 🏠 Prodotti da comprare")
+    # Codice del Tab 1 qui...
     st.info("La tua lista apparirà qui.")
 
 with tab2:
     st.markdown("### 🛒 Spesa in corso")
+    # Codice del Tab 2 qui...
     st.info("L'interfaccia di spesa apparirà qui.")
 
 with tab3:
     st.markdown("### 📦 Catalogo Prodotti")
     
-    # Campo di ricerca
-    search = st.text_input("Cerca prodotto...", placeholder="Es: Pasta...", key="search_cat_v7")
+    # Ricerca
+    search = st.text_input("Cerca prodotto...", placeholder="Es: Pasta...", key="search_cat_final_v8")
     
     if 'df' in st.session_state:
-        # Creazione copia filtrata
+        # Filtriamo per la visualizzazione
         df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy()
         df_cat = df_cat.sort_values("Prodotto")
         
@@ -85,11 +87,10 @@ with tab3:
             is_in_list = row['Stato'] == "DA COMPRARE"
             
             with st.container():
-                # Wrapper HTML per applicare lo stile CSS
+                # Wrapper per lo stile gigante
                 st.markdown('<div class="cat-row">', unsafe_allow_html=True)
                 
                 col_left, col_right = st.columns([0.7, 0.3])
-                
                 with col_left:
                     color = "#bbbbbb" if is_in_list else "#000000"
                     st.markdown(f'<span class="cat-name" style="color:{color}">{row["Prodotto"]}</span>', unsafe_allow_html=True)
@@ -99,8 +100,7 @@ with tab3:
                     url = row.get('URL_Foto', "")
                     if pd.notna(url) and str(url).startswith("http"):
                         st.markdown(f'<img src="{url}" class="cat-img">', unsafe_allow_html=True)
-                
-                # Area Bottone
+
                 if is_in_list:
                     st.button("🛒 IN LISTA", key=f"btn_in_cat_{idx}", disabled=True)
                 else:
@@ -113,6 +113,7 @@ with tab3:
                 
                 st.markdown('</div>', unsafe_allow_html=True)
                 st.divider()
+                
 # --- TAB 3: CATALOGO ---
 with tab3:
     st.markdown("### 📦 Catalogo Prodotti")
