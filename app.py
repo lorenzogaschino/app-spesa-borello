@@ -2,15 +2,15 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
-# 1. Configurazione Pagina
+# 1. Configurazione Pagina (Deve essere la prima istruzione Streamlit)
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
 
-# 2. CSS Mirato per Mobile (Isolamento Tab 3)
+# 2. CSS ORIGINALE + FIX PER BOTTONI GIGANTI
 st.markdown("""
 <style>
     .stMainBlockContainer { padding: 1rem !important; }
 
-    /* Stili testo Catalogo */
+    /* Stili Catalogo */
     .cat-name {
         font-size: 26px !important; 
         font-weight: 800 !important;
@@ -18,15 +18,12 @@ st.markdown("""
         color: #000000 !important;
         display: block;
     }
-    
     .cat-cap { 
         font-size: 18px !important; 
         color: #555555 !important; 
         display: block;
         margin-bottom: 10px;
     }
-
-    /* Immagini Catalogo */
     .cat-img {
         width: 100px !important; 
         height: 100px !important;
@@ -35,61 +32,52 @@ st.markdown("""
         border: 1px solid #eee;
     }
 
-    /* BOTTONI GIGANTI: Solo dentro .cat-row */
+    /* Bottoni Giganti SOLO nel Catalogo */
     div.cat-row div.stButton > button {
         width: 100% !important;
-        height: 75px !important;
+        height: 70px !important;
         font-size: 28px !important;
         font-weight: bold !important;
-        border-radius: 18px !important;
+        border-radius: 15px !important;
         background-color: #ffffff !important;
         border: 2px solid #333 !important;
-        margin-top: 10px !important;
-    }
-
-    /* Reset bottoni per Tab 1 e 2 */
-    div.stButton > button {
-        font-size: 14px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Connessione e Funzioni Core
+# 3. Connessione e Dati
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-def save_data():
-    try:
-        # Usiamo un dataframe pulito per l'update
-        df_to_save = st.session_state.df.copy()
-        conn.update(worksheet="Catalogo", data=df_to_save)
-    except Exception as e:
-        st.error(f"Errore durante il salvataggio: {e}")
+# Funzione di salvataggio semplice
+def save():
+    conn.update(worksheet="Catalogo", data=st.session_state.df)
 
-# Inizializzazione dati (solo una volta)
+# Caricamento dati
 if 'df' not in st.session_state:
-    try:
-        st.session_state.df = conn.read(worksheet="Catalogo")
-    except Exception as e:
-        st.error(f"Errore connessione: {e}")
-        st.stop()
+    st.session_state.df = conn.read(worksheet="Catalogo")
 
-# Selezione Utente (Globale)
-utente = st.sidebar.selectbox("Chi sei?", ["Lorenzo", "Maria"])
+# UTENTE (Lo mettiamo qui come variabile semplice, non nella sidebar)
+utente = "Lorenzo" # O Maria, puoi cambiarlo qui manualmente o rimetterlo dove preferisci
 
-# 4. Definizione TAB
+# 4. DEFINIZIONE TAB (Visibili in alto)
 tab1, tab2, tab3 = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
-# --- TAB 1 e 2: Inserire qui il tuo codice per la lista ---
+with tab1:
+    st.write("## 🏠 La tua Lista")
+    # Qui andrà il codice della lista
+
+with tab2:
+    st.write("## 🛒 Spesa in corso")
+    # Qui andrà il codice della spesa
 
 # --- TAB 3: CATALOGO ---
 with tab3:
     st.write("## 📦 Catalogo")
-    search = st.text_input("Cerca prodotto...", placeholder="Pasta, latte...", key="search_cat_v4")
+    search = st.text_input("Cerca prodotto...", placeholder="Es: Pasta...", key="search_cat_v5")
     
-    if isinstance(st.session_state.df, pd.DataFrame):
-        # Filtriamo per la visualizzazione senza alterare l'indice originale
-        df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy()
-        df_cat = df_cat.sort_values("Prodotto")
+    if 'df' in st.session_state:
+        # Prepariamo i dati per la visualizzazione
+        df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
         
         if search:
             df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
@@ -101,7 +89,6 @@ with tab3:
                 st.markdown('<div class="cat-row">', unsafe_allow_html=True)
                 
                 col_left, col_right = st.columns([0.7, 0.3])
-                
                 with col_left:
                     color = "#bbbbbb" if is_in_list else "#000000"
                     st.markdown(f'<span class="cat-name" style="color:{color}">{row["Prodotto"]}</span>', unsafe_allow_html=True)
@@ -111,17 +98,15 @@ with tab3:
                     url = row.get('URL_Foto', "")
                     if url and str(url).startswith("http"):
                         st.markdown(f'<img src="{url}" class="cat-img">', unsafe_allow_html=True)
-                    else:
-                        st.write("")
 
+                # Bottone Azione
                 if is_in_list:
                     st.button("🛒 IN LISTA", key=f"btn_in_{idx}", disabled=True)
                 else:
                     if st.button(f"➕ AGGIUNGI", key=f"btn_add_{idx}"):
-                        # Modifica diretta sul session_state usando l'indice originale
                         st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
                         st.session_state.df.at[idx, 'User'] = utente
-                        save_data()
+                        save()
                         st.toast(f"✅ {row['Prodotto']} aggiunto!")
                         st.rerun()
                 
