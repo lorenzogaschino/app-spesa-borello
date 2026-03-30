@@ -3,47 +3,50 @@ import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
 # 1. CONFIGURAZIONE PAGINA
-st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="wide")
+# Usiamo layout="centered" per evitare che su schermi grandi il testo si disperda troppo a sinistra
+st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="centered")
 
-# 2. CSS UNIFICATO E SICURO (Menu visibile, bottoni grandi, layout pulito)
+# 2. CSS UNIFICATO E SICURO (Ripristino Menu e Layout Compatto)
 st.markdown("""
 <style>
+    /* Risoluzione regressione menu: padding-top ridotto per liberare i Tab */
     .block-container { padding-top: 1rem !important; }
     
-    /* Scheda prodotto compatta */
+    /* Scheda prodotto compatta a strati */
     .product-card {
         background-color: #ffffff;
         border-radius: 10px;
         padding: 12px;
-        margin-bottom: 8px;
+        margin-bottom: 5px;
         border: 1px solid #eee;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     
-    /* Header: Nome a sinistra, Foto a destra */
+    /* Header: Nome/Info a sinistra, Foto a destra come icona */
     .product-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 10px;
     }
     
     .prod-name { font-size: 20px !important; font-weight: 700; color: #111; line-height: 1.2; }
     .prod-info { font-size: 14px !important; color: #666; }
     .prod-img { width: 65px !important; height: 65px !important; object-fit: cover; border-radius: 8px; }
     
-    /* Bottoni larghi e comodi */
+    /* Bottoni larghi subito sotto la scheda (Layout a strati) */
     div.stButton > button {
         width: 100% !important;
         height: 45px !important;
         font-weight: bold !important;
         border-radius: 8px !important;
         font-size: 16px !important;
+        margin-top: 5px;
+        margin-bottom: 12px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# 3. GESTIONE DATI (Connessione e Pulizia) - AGGIORNATO
+# 3. GESTIONE DATI (Connessione e Pulizia)
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def save_data():
@@ -52,18 +55,18 @@ def save_data():
 if 'df' not in st.session_state:
     raw_df = conn.read(worksheet="Catalogo")
     
-    # Pulizia Prodotto
+    # Pulizia Prodotto: rimuove righe vuote o 'nan' dallo sheet
     raw_df['Prodotto'] = raw_df['Prodotto'].astype(str).str.strip()
     raw_df = raw_df[~raw_df['Prodotto'].isin(['nan', '', 'None'])]
     
-    # FORZIAMO LE CORSIE A ESSERE TESTO (Evita l'errore di sorting)
+    # Blindatura Corsie: evita errori di sorting se ci sono celle vuote
     raw_df['Corsia'] = raw_df['Corsia'].astype(str).str.strip().replace('nan', '?')
     
     st.session_state.df = raw_df.reset_index(drop=True)
 
 utente_attuale = "Lorenzo"
 
-# --- 4. STRUTTURA TAB ---
+# --- 4. STRUTTURA TAB (Ora visibili in alto) ---
 tab_lista, tab_spesa, tab_catalogo = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
 # Definizione dell'ordine logico del supermercato
@@ -74,9 +77,8 @@ ORDINE_CORSIE = {
 }
 
 def sort_by_aisle(df):
-    """Funzione di supporto per ordinare il DF secondo il percorso Borello"""
-    # Creiamo una colonna temporanea per l'ordinamento
-    # Se una corsia non è in lista, la mettiamo in fondo (99)
+    """Ordina il DataFrame seguendo il percorso fisico del negozio"""
+    # Mappa le corsie ai numeri; se la corsia è ignota (?), va in fondo (99)
     df['sort_idx'] = df['Corsia'].map(ORDINE_CORSIE).fillna(99)
     return df.sort_values('sort_idx').drop(columns=['sort_idx'])
     
