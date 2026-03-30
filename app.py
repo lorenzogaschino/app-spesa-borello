@@ -9,39 +9,53 @@ st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="centere
 # 2. CSS UNIFICATO E SICURO (Ripristino Menu e Layout Compatto)
 st.markdown("""
 <style>
-    /* Risoluzione regressione menu: padding-top ridotto per liberare i Tab */
-    .block-container { padding-top: 1rem !important; }
+    /* Rimuove il padding eccessivo che nascondeva i Tab */
+    .stApp { margin-top: -50px; } /* Recupera spazio in alto */
     
+    .block-container { 
+        padding-top: 2rem !important; 
+        max-width: 550px !important; 
+    }
+    
+    /* Forza la visibilità della barra dei Tab */
+    .stTabs [data-baseweb="tab-list"] {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background-color: white;
+        padding-top: 10px;
+    }
+
     /* Scheda prodotto compatta a strati */
     .product-card {
         background-color: #ffffff;
         border-radius: 10px;
         padding: 12px;
-        margin-bottom: 5px;
+        margin-bottom: 0px; /* Ridotto per il layout a strati */
         border: 1px solid #eee;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     
-    /* Header: Nome/Info a sinistra, Foto a destra come icona */
+    /* Header: Nome/Info a sinistra, Foto a destra */
     .product-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
     
-    .prod-name { font-size: 20px !important; font-weight: 700; color: #111; line-height: 1.2; }
+    .prod-name { font-size: 18px !important; font-weight: 700; color: #111; line-height: 1.2; }
     .prod-info { font-size: 14px !important; color: #666; }
-    .prod-img { width: 65px !important; height: 65px !important; object-fit: cover; border-radius: 8px; }
+    .prod-img { width: 60px !important; height: 60px !important; object-fit: cover; border-radius: 8px; }
     
-    /* Bottoni larghi subito sotto la scheda (Layout a strati) */
+    /* Bottone largo subito sotto la scheda (Layout a strati) */
     div.stButton > button {
         width: 100% !important;
-        height: 45px !important;
+        height: 42px !important;
         font-weight: bold !important;
         border-radius: 8px !important;
-        font-size: 16px !important;
-        margin-top: 5px;
-        margin-bottom: 12px;
+        font-size: 15px !important;
+        margin-top: 4px !important;
+        margin-bottom: 15px !important;
     }
 </style>
 """, unsafe_allow_html=True)
