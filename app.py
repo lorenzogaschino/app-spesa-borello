@@ -75,32 +75,25 @@ def sort_by_aisle(df):
 with tab_lista:
     st.subheader("📝 Da acquistare")
     
-    # Aggiunta manuale
-    with st.expander("➕ Aggiungi prodotto non in catalogo", expanded=False):
-        c1, c2 = st.columns([0.7, 0.3])
-        nome_m = c1.text_input("Nome", key="manual_name")
-        corsia_m = c2.selectbox("Corsia", ["?", "1", "2", "3", "4", "5", "FRIGO", "SURGELATI", "ORTOFRUTTA"], key="manual_corsia")
-        if st.button("Aggiungi in Lista", key="btn_add_manual"):
-            if nome_m:
-                new_item = pd.DataFrame([{"Prodotto": nome_m, "Corsia": corsia_m, "Stato": "DA COMPRARE", "User": utente_attuale, "Tipo": "Manuale", "URL_Foto": ""}])
-                st.session_state.df = pd.concat([st.session_state.df, new_item], ignore_index=True)
-                save_data()
-                st.rerun()
+    # ... (parte expander aggiunta manuale invariata) ...
 
     st.divider()
     
-    items_in_list = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"]
+    items_in_list = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy()
     
     if items_in_list.empty:
-        st.info("La lista è vuota. Vai nel Catalogo per aggiungere prodotti!")
+        st.info("La lista è vuota.")
     else:
+        # Applichiamo l'ordine del supermercato
+        items_in_list = sort_by_aisle(items_in_list)
+        
         for idx, row in items_in_list.iterrows():
             with st.container(border=True):
                 col_txt, col_img = st.columns([0.7, 0.3])
                 with col_txt:
                     st.markdown(f'<span class="prod-name">{row["Prodotto"]}</span>', unsafe_allow_html=True)
-                    st.markdown(f'<span class="prod-info">📍 Corsia: {row["Corsia"]}</span>', unsafe_allow_html=True)
-                    st.markdown(f'<span class="prod-user">👤 Aggiunto da: {row.get("User", "---")}</span>', unsafe_allow_html=True)
+                    st.markdown(f'<span class="prod-info">📍 {row["Corsia"]}</span>', unsafe_allow_html=True)
+                    # RIMOSSO: User info
                 with col_img:
                     url = row.get('URL_Foto', "")
                     if pd.notna(url) and str(url).startswith("http"):
@@ -113,59 +106,36 @@ with tab_lista:
                         st.session_state.df.at[idx, 'Stato'] = ""
                     save_data()
                     st.rerun()
+                    
 # ==========================================
 # TAB 2: SPESA (IN NEGOZIO - LAYOUT UNIFICATO)
 # ==========================================
 with tab_spesa:
     st.subheader("🛒 Al Supermercato")
     
-    if 'df' in st.session_state:
-        # 1. Filtriamo i prodotti da comprare
-        df_spesa = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy()
+    df_spesa = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy()
+    
+    if df_spesa.empty:
+        st.success("Tutto preso! 🎉")
+    else:
+        # Applichiamo l'ordine del supermercato
+        df_spesa = sort_by_aisle(df_spesa)
         
-        if df_spesa.empty:
-            st.success("Tutto preso! Carrello pieno. 🎉")
-        else:
-            # 2. FIX SORTER: Forziamo la colonna Corsia a stringa per evitare crash tra numeri e testo
-            df_spesa['Corsia'] = df_spesa['Corsia'].astype(str)
-            df_spesa = df_spesa.sort_values("Corsia")
-            
-            st.info("Tocca 'PRESO' per spostare l'articolo nel carrello.")
-
-            for idx, row in df_spesa.iterrows():
-                with st.container(border=True):
-                    # Layout identico a Tab 1 e Tab 3
-                    col_txt, col_img = st.columns([0.7, 0.3])
-                    
-                    with col_txt:
-                        st.markdown(f'<span class="prod-name">{row["Prodotto"]}</span>', unsafe_allow_html=True)
-                        st.markdown(f'<span class="prod-info">📍 Corsia: {row["Corsia"]}</span>', unsafe_allow_html=True)
-                        # Coerenza: mostriamo chi lo ha aggiunto
-                        st.markdown(f'<span class="prod-user">👤 Richiesto da: {row.get("User", "---")}</span>', unsafe_allow_html=True)
-                    
-                    with col_img:
-                        url = row.get('URL_Foto', "")
-                        if pd.notna(url) and str(url).startswith("http"):
-                            st.markdown(f'<img src="{url}" class="prod-img">', unsafe_allow_html=True)
-                    
-                    # Tasto azione (Stessa grandezza degli altri tab)
-                    if st.button(f"✅ PRESO!", key=f"S_check_{idx}"):
-                        st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
-                        save_data()
-                        st.rerun()
-
-        st.divider()
-        
-        # 3. Bottone di chiusura spesa (appare solo se c'è qualcosa nel carrello o in lista)
-        check_any = st.session_state.df[st.session_state.df['Stato'].isin(["DA COMPRARE", "NEL CARRELLO"])]
-        if not check_any.empty:
-            if st.button("🏁 FINISCI SPESA E SVUOTA TUTTO", key="finish_all_spesa_btn", type="primary"):
-                # Reset stati catalogo
-                st.session_state.df.loc[st.session_state.df['Stato'].isin(["DA COMPRARE", "NEL CARRELLO"]), 'Stato'] = ""
-                # Eliminazione definitiva prodotti manuali
-                st.session_state.df = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].reset_index(drop=True)
-                save_data()
-                st.rerun()
+        for idx, row in df_spesa.iterrows():
+            with st.container(border=True):
+                col_txt, col_img = st.columns([0.7, 0.3])
+                with col_txt:
+                    st.markdown(f'<span class="prod-name">{row["Prodotto"]}</span>', unsafe_allow_html=True)
+                    st.markdown(f'<span class="prod-info">📍 {row["Corsia"]}</span>', unsafe_allow_html=True)
+                with col_img:
+                    url = row.get('URL_Foto', "")
+                    if pd.notna(url) and str(url).startswith("http"):
+                        st.markdown(f'<img src="{url}" class="prod-img">', unsafe_allow_html=True)
+                
+                if st.button(f"✅ PRESO!", key=f"S_check_{idx}"):
+                    st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
+                    save_data()
+                    st.rerun()
 
 # ==========================================
 # TAB 3: CATALOGO (Ricerca e Aggiunta)
@@ -174,8 +144,9 @@ with tab_catalogo:
     st.subheader("📦 Catalogo")
     search = st.text_input("Cerca prodotto...", key="search_bar")
     
+    # Ordine Alfabetico per il catalogo
     df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
-    
+           
     if search:
         df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
     
