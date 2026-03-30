@@ -32,7 +32,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. GESTIONE DATI (Connessione e Pulizia)
+# 3. GESTIONE DATI (Connessione e Pulizia) - AGGIORNATO
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def save_data():
@@ -40,10 +40,14 @@ def save_data():
 
 if 'df' not in st.session_state:
     raw_df = conn.read(worksheet="Catalogo")
-    # Pulizia: Rimuoviamo righe dove il Prodotto è vuoto o "nan"
+    
+    # Pulizia Prodotto
     raw_df['Prodotto'] = raw_df['Prodotto'].astype(str).str.strip()
-    raw_df = raw_df[raw_df['Prodotto'] != 'nan']
-    raw_df = raw_df[raw_df['Prodotto'] != '']
+    raw_df = raw_df[~raw_df['Prodotto'].isin(['nan', '', 'None'])]
+    
+    # FORZIAMO LE CORSIE A ESSERE TESTO (Evita l'errore di sorting)
+    raw_df['Corsia'] = raw_df['Corsia'].astype(str).str.strip().replace('nan', '?')
+    
     st.session_state.df = raw_df.reset_index(drop=True)
 
 utente_attuale = "Lorenzo"
@@ -102,8 +106,8 @@ with tab_spesa:
     st.subheader("🛒 Al Supermercato")
     
     # Filtriamo e ordiniamo per corsia
-    df_spesa = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].sort_values("Corsia")
-    
+df_spesa = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy()  
+
     if df_spesa.empty:
         st.success("Tutto preso! Carrello pieno. 🎉")
     else:
