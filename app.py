@@ -55,6 +55,20 @@ utente_attuale = "Lorenzo"
 # --- 4. STRUTTURA TAB ---
 tab_lista, tab_spesa, tab_catalogo = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
+# Definizione dell'ordine logico del supermercato
+ORDINE_CORSIE = {
+    "Ortofrutta": 0, "Frighi": 1, "Pescheria": 2, "Gastronomia": 3,
+    "Corsia 5": 4, "Corsia 4": 5, "Corsia 3": 6, "Corsia 2": 7, "Corsia 1": 8,
+    "Macelleria": 9, "Surgelati": 10
+}
+
+def sort_by_aisle(df):
+    """Funzione di supporto per ordinare il DF secondo il percorso Borello"""
+    # Creiamo una colonna temporanea per l'ordinamento
+    # Se una corsia non è in lista, la mettiamo in fondo (99)
+    df['sort_idx'] = df['Corsia'].map(ORDINE_CORSIE).fillna(99)
+    return df.sort_values('sort_idx').drop(columns=['sort_idx'])
+    
 # ==========================================
 # TAB 1: LISTA (Cosa dobbiamo comprare)
 # ==========================================
