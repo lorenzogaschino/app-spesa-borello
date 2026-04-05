@@ -60,6 +60,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+/* Colori bordi per categoria */
+    .border-ortofrutta { border-left: 5px solid #2ecc71 !important; }
+    .border-frigo { border-left: 5px solid #3498db !important; }
+    .border-carne { border-left: 5px solid #e74c3c !important; }
+    .border-generico { border-left: 5px solid #f1c40f !important; }
+                      
 # 3. GESTIONE DATI (Connessione e Pulizia)
 conn = st.connection("gsheets", type=GSheetsConnection)
 
