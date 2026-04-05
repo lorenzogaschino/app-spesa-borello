@@ -59,13 +59,7 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
-/* Colori bordi per categoria */
-    .border-ortofrutta { border-left: 5px solid #2ecc71 !important; }
-    .border-frigo { border-left: 5px solid #3498db !important; }
-    .border-carne { border-left: 5px solid #e74c3c !important; }
-    .border-generico { border-left: 5px solid #f1c40f !important; }
-                      
+                     
 # 3. GESTIONE DATI (Connessione e Pulizia)
 conn = st.connection("gsheets", type=GSheetsConnection)
 
@@ -102,6 +96,12 @@ def sort_by_aisle(df):
     df['sort_idx'] = df['Corsia'].map(ORDINE_CORSIE).fillna(99)
     return df.sort_values('sort_idx').drop(columns=['sort_idx'])
     
+ /* Colori bordi per categoria */
+    .border-ortofrutta { border-left: 5px solid #2ecc71 !important; }
+    .border-frigo { border-left: 5px solid #3498db !important; }
+    .border-carne { border-left: 5px solid #e74c3c !important; }
+    .border-generico { border-left: 5px solid #f1c40f !important; }   
+                      
 # ==========================================
 # TAB 1: LISTA (Cosa dobbiamo comprare)
 # ==========================================
