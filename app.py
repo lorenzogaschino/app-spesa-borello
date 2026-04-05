@@ -96,8 +96,9 @@ ORDINE_CORSIE = {
     "Ortofrutta": 0, "Frighi": 1, "Pescheria": 2, "Gastronomia": 3,
     "Corsia 5": 4, "Corsia 4": 5, "Corsia 3": 6, "Corsia 2": 7, "Corsia 1": 8,
     "Macelleria": 9, "Surgelati": 10
-def get_color_class(corsia):}
-    
+}
+
+def get_color_class(corsia):
     corsia = str(corsia).lower()
     if "ortofrutta" in corsia: return "border-ortofrutta"
     if "frighi" in corsia or "surgelati" in corsia: return "border-frigo"
@@ -108,7 +109,8 @@ def sort_by_aisle(df):
     """Ordina il DataFrame seguendo il percorso fisico del negozio"""
     # Mappa le corsie ai numeri; se la corsia è ignota (?), va in fondo (99)
     df['sort_idx'] = df['Corsia'].map(ORDINE_CORSIE).fillna(99)
-    return df.sort_values('sort_idx').drop(columns=['sort_idx'])  
+    return df.sort_values('sort_idx').drop(columns=['sort_idx'])
+
                        
 # ==========================================
 # TAB 1: LISTA (Cosa dobbiamo comprare)
