@@ -96,6 +96,12 @@ ORDINE_CORSIE = {
     "Ortofrutta": 0, "Frighi": 1, "Pescheria": 2, "Gastronomia": 3,
     "Corsia 5": 4, "Corsia 4": 5, "Corsia 3": 6, "Corsia 2": 7, "Corsia 1": 8,
     "Macelleria": 9, "Surgelati": 10
+def get_color_class(corsia):
+    corsia = str(corsia).lower()
+    if "ortofrutta" in corsia: return "border-ortofrutta"
+    if "frighi" in corsia or "surgelati" in corsia: return "border-frigo"
+    if "macelleria" in corsia or "pescheria" in corsia or "gastronomia" in corsia: return "border-carne"
+    return "border-generico"
 }
 
 def sort_by_aisle(df):
@@ -130,7 +136,7 @@ with tab_lista:
         for idx, row in items_in_list.iterrows():
             # NUOVO LAYOUT A STRATI
             st.markdown(f'''
-                <div class="product-card">
+                <div class="product-card {get_color_class(row['Corsia'])}">
                     <div class="product-header">
                         <div>
                             <div class="prod-name">{row["Prodotto"]}</div>
@@ -162,7 +168,7 @@ with tab_spesa:
         df_spesa = sort_by_aisle(df_spesa)
         for idx, row in df_spesa.iterrows():
             st.markdown(f'''
-                <div class="product-card">
+               <div class="product-card {get_color_class(row['Corsia'])}">
                     <div class="product-header">
                         <div>
                             <div class="prod-name">{row["Prodotto"]}</div>
@@ -202,7 +208,7 @@ with tab_catalogo:
         color = "#AAA" if is_in else "#111"
         
         st.markdown(f'''
-            <div class="product-card">
+           <div class="product-card {get_color_class(row['Corsia'])}">
                 <div class="product-header">
                     <div>
                         <div class="prod-name" style="color:{color}">{row["Prodotto"]}</div>
