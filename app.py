@@ -96,7 +96,7 @@ def sort_by_aisle(df):
     df['sort_idx'] = df['Corsia'].map(ORDINE_CORSIE).fillna(99)
     return df.sort_values('sort_idx').drop(columns=['sort_idx'])
     
- * Colori bordi per categoria */
+/* Colori bordi per categoria */
     .border-ortofrutta { border-left: 5px solid #2ecc71 !important; }
     .border-frigo { border-left: 5px solid #3498db !important; }
     .border-carne { border-left: 5px solid #e74c3c !important; }
