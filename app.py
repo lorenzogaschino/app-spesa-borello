@@ -2,68 +2,53 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
-# Tentativo di importazione sicura per il refresh
+# 1. CONFIGURAZIONE E AUTO-REFRESH (Per multi-utente)
 try:
     from streamlit_autorefresh import st_autorefresh
 except ImportError:
     st_autorefresh = None
 
-# 1. CONFIGURAZIONE PAGINA
 st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="centered")
 
 if st_autorefresh:
+    # Refresh ogni 30 secondi per vedere i prodotti aggiunti dagli altri in tempo reale
     st_autorefresh(interval=30000, key="datarefresh")
 
-# 2. CSS OTTIMIZZATO (Incluso stile per immagini)
+# 2. CSS UNIFICATO (Stile originale ripristinato)
 st.markdown("""
 <style>
-    .stApp { margin-top: -60px; }
-    .block-container { padding-top: 1rem !important; max-width: 500px !important; }
-    
+    .stApp { margin-top: -50px; }
+    .block-container { padding-top: 2rem !important; max-width: 550px !important; }
+    .stTabs [data-baseweb="tab-list"] { position: sticky; top: 0; z-index: 1000; background-color: white; padding-top: 10px; }
     .product-card {
-        background-color: #ffffff; border-radius: 12px;
-        padding: 12px; margin-bottom: 0px; border: 1px solid #f0f0f0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        background-color: #ffffff; border-radius: 10px; padding: 12px;
+        margin-bottom: 0px; border: 1px solid #eee; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    
-    .product-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-    .prod-name { font-size: 1.1rem !important; font-weight: 700; color: #111; line-height: 1.2; }
-    .prod-info { font-size: 0.85rem !important; color: #777; }
-    
-    /* Gestione Immagine: Quadrata e proporzionata */
-    .prod-img { 
-        width: 60px !important; 
-        height: 60px !important; 
-        object-fit: cover; 
-        border-radius: 8px; 
-        background-color: #f8f9fa;
+    .product-header { display: flex; justify-content: space-between; align-items: center; }
+    .prod-name { font-size: 18px !important; font-weight: 700; color: #111; line-height: 1.2; }
+    .prod-info { font-size: 14px !important; color: #666; }
+    .prod-img { width: 60px !important; height: 60px !important; object-fit: cover; border-radius: 8px; }
+    div.stButton > button {
+        width: 100% !important; height: 42px !important; font-weight: bold !important;
+        border-radius: 8px !important; font-size: 15px !important; margin-top: 4px !important; margin-bottom: 15px !important;
     }
-    
-    div.stButton > button { 
-        width: 100% !important; height: 42px !important; 
-        font-weight: 600; border-radius: 10px !important; 
-        margin-top: 5px !important; margin-bottom: 15px !important;
-    }
-
-    .border-ortofrutta { border-left: 6px solid #2ecc71 !important; }
-    .border-frigo { border-left: 6px solid #3498db !important; }
-    .border-carne { border-left: 6px solid #e74c3c !important; }
-    .border-generico { border-left: 6px solid #f1c40f !important; }
+    .border-ortofrutta { border-left: 5px solid #2ecc71 !important; }
+    .border-frigo { border-left: 5px solid #3498db !important; }
+    .border-carne { border-left: 5px solid #e74c3c !important; }
+    .border-generico { border-left: 5px solid #f1c40f !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# 3. GESTIONE DATI
+# 3. GESTIONE DATI (Connessione e Sincronizzazione)
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def load_data():
+    # ttl=0 garantisce che ogni utente veda i dati aggiornati degli altri
     df = conn.read(worksheet="Catalogo", ttl=0)
     df = df.dropna(subset=['Prodotto'])
     df['Prodotto'] = df['Prodotto'].astype(str).str.strip()
     df['Stato'] = df['Stato'].fillna('')
-    df['Corsia'] = df['Corsia'].fillna('?').astype(str)
-    # Assicuriamoci che URL_Foto esista nel DF
-    if 'URL_Foto' not in df.columns:
-        df['URL_Foto'] = ""
+    df['Corsia'] = df['Corsia'].fillna('?').astype(str).str.strip()
     return df.reset_index(drop=True)
 
 def save_data(df):
@@ -73,80 +58,102 @@ def save_data(df):
 if 'df' not in st.session_state:
     st.session_state.df = load_data()
 
-# 4. LOGICA VISUALE
+utente_attuale = "Lorenzo" # Potresti rendere questo dinamico con un st.sidebar.selectbox
+
+# 4. LOGICA DI ORDINAMENTO
 ORDINE_CORSIE = {
     "Ortofrutta": 0, "Frighi": 1, "Pescheria": 2, "Gastronomia": 3,
     "Corsia 5": 4, "Corsia 4": 5, "Corsia 3": 6, "Corsia 2": 7, "Corsia 1": 8,
     "Macelleria": 9, "Surgelati": 10
 }
 
-def get_style(corsia):
+def get_color_class(corsia):
     c = str(corsia).lower()
     if "ortofrutta" in c: return "border-ortofrutta"
     if any(x in c for x in ["frighi", "surgelati"]): return "border-frigo"
     if any(x in c for x in ["macelleria", "pescheria", "gastronomia"]): return "border-carne"
     return "border-generico"
 
-def render_product_card(row):
-    """Funzione centralizzata per renderizzare la card con immagine"""
-    img_url = row.get('URL_Foto', "")
-    img_html = f'<img src="{img_url}" class="prod-img">' if pd.notna(img_url) and str(img_url).startswith('http') else '<div></div>'
-    
-    st.markdown(f'''
-        <div class="product-card {get_style(row['Corsia'])}">
-            <div class="product-header">
-                <div>
-                    <div class="prod-name">{row["Prodotto"]}</div>
-                    <div class="prod-info">📍 {row["Corsia"]}</div>
-                </div>
-                {img_html}
-            </div>
-        </div>
-    ''', unsafe_allow_html=True)
+def sort_df(df):
+    df['sort_idx'] = df['Corsia'].map(ORDINE_CORSIE).fillna(99)
+    return df.sort_values('sort_idx').drop(columns=['sort_idx'])
 
-# 5. INTERFACCIA TABS
-tab_lista, tab_spesa, tab_catalogo = st.tabs(["📝 LISTA", "🛒 SPESA", "📦 CATALOGO"])
+# --- TABS ---
+tab_lista, tab_spesa, tab_catalogo = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
+# TAB 1: LISTA (Aggiunta Manuale ripristinata)
 with tab_lista:
-    df_lista = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy()
-    if df_lista.empty:
-        st.info("Lista vuota.")
-    else:
-        df_lista['sort'] = df_lista['Corsia'].map(ORDINE_CORSIE).fillna(99)
-        for idx, row in df_lista.sort_values('sort').iterrows():
-            render_product_card(row)
-            if st.button("❌ Rimuovi", key=f"del_{idx}"):
-                st.session_state.df.at[idx, 'Stato'] = ""
-                save_data(st.session_state.df)
-                st.rerun()
+    st.subheader("📝 Da acquistare")
+    with st.expander("➕ Aggiungi prodotto non in catalogo"):
+        m_nome = st.text_input("Cosa serve?")
+        m_corsia = st.selectbox("In quale corsia?", list(ORDINE_CORSIE.keys()) + ["?"])
+        if st.button("Aggiungi ora"):
+            new_row = pd.DataFrame([{"Prodotto": m_nome, "Corsia": m_corsia, "Stato": "DA COMPRARE", "Tipo": "Manuale", "User": utente_attuale}])
+            save_data(pd.concat([st.session_state.df, new_row], ignore_index=True))
+            st.rerun()
 
+    st.divider()
+    df_lista = sort_df(st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy())
+    for idx, row in df_lista.iterrows():
+        img_html = f'<img src="{row["URL_Foto"]}" class="prod-img">' if pd.notna(row.get("URL_Foto")) and str(row["URL_Foto"]).startswith("http") else ""
+        st.markdown(f'''<div class="product-card {get_color_class(row["Corsia"])}"><div class="product-header">
+            <div><div class="prod-name">{row["Prodotto"]}</div><div class="prod-info">📍 {row["Corsia"]}</div></div>
+            {img_html}</div></div>''', unsafe_allow_html=True)
+        if st.button("❌ RIMUOVI", key=f"L_rem_{idx}"):
+            if row['Tipo'] == "Manuale":
+                st.session_state.df = st.session_state.df.drop(idx).reset_index(drop=True)
+            else:
+                st.session_state.df.at[idx, 'Stato'] = ""
+            save_data(st.session_state.df)
+            st.rerun()
+
+# TAB 2: SPESA
 with tab_spesa:
-    df_spesa = st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy()
+    st.subheader("🛒 Al Supermercato")
+    df_spesa = sort_df(st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy())
     if df_spesa.empty:
         st.success("Tutto preso! 🎉")
     else:
-        df_spesa['sort'] = df_spesa['Corsia'].map(ORDINE_CORSIE).fillna(99)
-        for idx, row in df_spesa.sort_values('sort').iterrows():
-            render_product_card(row)
-            if st.button("✅ PRESO", key=f"buy_{idx}"):
+        for idx, row in df_spesa.iterrows():
+            img_html = f'<img src="{row["URL_Foto"]}" class="prod-img">' if pd.notna(row.get("URL_Foto")) and str(row["URL_Foto"]).startswith("http") else ""
+            st.markdown(f'''<div class="product-card {get_color_class(row["Corsia"])}"><div class="product-header">
+                <div><div class="prod-name">{row["Prodotto"]}</div><div class="prod-info">📍 {row["Corsia"]}</div></div>
+                {img_html}</div></div>''', unsafe_allow_html=True)
+            if st.button("✅ PRESO!", key=f"S_buy_{idx}"):
                 st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
                 save_data(st.session_state.df)
                 st.rerun()
 
+    if not st.session_state.df[st.session_state.df['Stato'].isin(["DA COMPRARE", "NEL CARRELLO"])].empty:
+        st.divider()
+        if st.button("🏁 FINISCI SPESA E SVUOTA", type="primary"):
+            st.session_state.df.loc[st.session_state.df['Stato'].isin(["DA COMPRARE", "NEL CARRELLO"]), 'Stato'] = ""
+            st.session_state.df = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].reset_index(drop=True)
+            save_data(st.session_state.df)
+            st.rerun()
+
+# TAB 3: CATALOGO (Ripristinato: Immagini, Utente e tasto Disabilitato)
 with tab_catalogo:
-    search = st.text_input("Cerca nel catalogo")
-    df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy()
+    st.subheader("📦 Catalogo")
+    search = st.text_input("Cerca prodotto...", key="search_bar")
+    df_cat = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].copy().sort_values("Prodotto")
     if search:
-        df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False)]
+        df_cat = df_cat[df_cat['Prodotto'].str.contains(search, case=False, na=False)]
     
-    for idx, row in df_cat.sort_values("Prodotto").iterrows():
-        gia_in = row['Stato'] == "DA COMPRARE"
-        # Opacità ridotta se già in lista
-        st.write(f'<div style="opacity: {0.4 if gia_in else 1}">', unsafe_allow_html=True)
-        render_product_card(row)
-        st.write('</div>', unsafe_allow_html=True)
-        if not gia_in:
-            if st.button("➕ Aggiungi", key=f"add_{idx}"):
+    for idx, row in df_cat.iterrows():
+        is_in = row['Stato'] == "DA COMPRARE"
+        color = "#AAA" if is_in else "#111"
+        img_html = f'<img src="{row["URL_Foto"]}" class="prod-img">' if pd.notna(row.get("URL_Foto")) and str(row["URL_Foto"]).startswith("http") else ""
+        
+        st.markdown(f'''<div class="product-card {get_color_class(row["Corsia"])}"><div class="product-header">
+            <div><div class="prod-name" style="color:{color}">{row["Prodotto"]}</div><div class="prod-info">📍 Corsia: {row["Corsia"]}</div></div>
+            {img_html}</div></div>''', unsafe_allow_html=True)
+        
+        if is_in:
+            st.button("🛒 IN LISTA", key=f"C_in_{idx}", disabled=True)
+        else:
+            if st.button("➕ AGGIUNGI", key=f"C_add_{idx}"):
                 st.session_state.df.at[idx, 'Stato'] = "DA COMPRARE"
+                st.session_state.df.at[idx, 'User'] = utente_attuale
                 save_data(st.session_state.df)
                 st.rerun()
