@@ -14,49 +14,53 @@ if st_autorefresh:
     # Refresh ogni 30 secondi per vedere i prodotti aggiunti dagli altri in tempo reale
     st_autorefresh(interval=10000, key="datarefresh")
 
-# # 2. CSS UNIFICATO (Forzatura Definitiva Layout Orizzontale)
+# # 2. CSS UNIFICATO (Compattazione Mobile & No-Scroll)
 st.markdown("""
 <style>
+    /* 1. Reset generale per eliminare scorrimento orizzontale */
+    html, body, [data-testid="stAppViewContainer"] {
+        overflow-x: hidden !important;
+        width: 100vw;
+    }
     .stApp { margin-top: -50px; }
-    .block-container { padding-top: 2rem !important; max-width: 550px !important; }
+    .block-container { padding-top: 2rem !important; max-width: 500px !important; padding-left: 1rem !important; padding-right: 1rem !important; }
     
-    /* Uniformità Intestazioni */
+    /* 2. Uniformità Intestazioni (Tab Lista e Spesa) */
     .mobile-header-container { display: flex; align-items: baseline; gap: 8px; margin-bottom: 15px; }
     .header-text { font-size: 22px !important; font-weight: 700; color: #111; }
     .count-text { font-size: 18px !important; color: #2e7d32; font-weight: 600; }
 
-    /* Card Prodotto */
+    /* 3. Card Prodotto compattata */
     .product-card {
         background-color: #ffffff; border-radius: 10px; padding: 10px;
         margin-bottom: 5px; border: 1px solid #eee; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    .product-header { display: flex; justify-content: space-between; align-items: center; }
     .prod-name { font-size: 16px !important; font-weight: 700; color: #111; }
-    .prod-img { width: 50px !important; height: 50px !important; object-fit: cover; border-radius: 8px; }
+    .prod-img { width: 45px !important; height: 45px !important; object-fit: cover; border-radius: 8px; }
     
-    /* FORZATURA ORIZZONTALE COLONNE (Risolve il problema delle due righe) */
+    /* 4. Forzatura Orizzontale Senza Scorrimento */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        align-items: center !important;
-        gap: 8px !important; /* Spazio tra i due bottoni */
+        gap: 10px !important; /* Spazio controllato tra i bottoni */
+        justify-content: flex-start !important;
     }
 
     [data-testid="column"] {
-        flex: 1 1 50% !important; /* Forza ogni colonna al 50% */
+        flex: 0 1 auto !important; /* Le colonne non si espandono più all'infinito */
         min-width: 0px !important;
     }
     
-    /* Stile Bottoni Compatti */
+    /* 5. Stile Bottoni Adattivi */
     div.stButton > button {
-        width: 100% !important;
-        height: 38px !important;
-        font-size: 11px !important; /* Ridotto leggermente per sicurezza */
+        width: auto !important; /* Il bottone si adatta al testo, non occupa tutto il 50% */
+        min-width: 100px !important;
+        height: 36px !important;
+        font-size: 12px !important;
         font-weight: bold !important;
-        padding: 0px 2px !important;
+        padding: 0px 10px !important;
         white-space: nowrap !important;
-        text-overflow: clip !important;
     }
 
     /* Bordi Corsie */
@@ -168,14 +172,14 @@ with tab_spesa:
     if df_spesa.empty:
         st.success("Tutto preso! 🎉")
     else:
-        for idx, row in df_spesa.iterrows():
-            img_html = f'<img src="{row["URL_Foto"]}" class="prod-img">' if pd.notna(row.get("URL_Foto")) and str(row["URL_Foto"]).startswith("http") else ""
+       for idx, row in df_spesa.iterrows():
+            # ... (parte markdown prodotto invariata) ...
             st.markdown(f'''<div class="product-card {get_color_class(row["Corsia"])}"><div class="product-header">
                 <div><div class="prod-name">{row["Prodotto"]}</div><div class="prod-info">📍 {row["Corsia"]}</div></div>
                 {img_html}</div></div>''', unsafe_allow_html=True)
             
-            # Creazione colonne: il CSS esistente impedirà che vadano a capo
-            c1, c2 = st.columns(2, gap="small")
+            # Creazione colonne compattate (proporzione 1:1 ma con larghezza auto nel CSS)
+            c1, c2 = st.columns([1, 1]) 
             with c1:
                 if st.button("✅ PRESO", key=f"S_buy_{idx}"):
                     st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
@@ -184,7 +188,7 @@ with tab_spesa:
             with c2:
                 if st.button("❌ RIMUOVI", key=f"S_rem_{idx}"):
                     rimuovi_prodotto(idx, row)
-
+                    
     # --- SEZIONE FINALE (Corretta Indentazione riga 188) ---
     if not st.session_state.df[st.session_state.df['Stato'].isin(["DA COMPRARE", "NEL CARRELLO"])].empty:
         st.divider()
