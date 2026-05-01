@@ -137,11 +137,9 @@ with tab_lista:
         if st.button("❌ RIMUOVI", key=f"L_rem_{idx}"):
             rimuovi_prodotto(idx, row)
 
-# TAB 2: SPESA
 with tab_spesa:
     df_spesa = sort_df(st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy())
     
-# Contatore dinamico ottimizzato per layout mobile (Sostituisce riga 141)
     count_spesa = len(df_spesa)
     st.markdown(f"""
         <div class="mobile-header-container">
@@ -170,7 +168,6 @@ with tab_spesa:
                 if st.button("❌ RIMUOVI", key=f"S_rem_{idx}"):
                     rimuovi_prodotto(idx, row)
 
-    # Bottone di chiusura spesa
     if not st.session_state.df[st.session_state.df['Stato'].isin(["DA COMPRARE", "NEL CARRELLO"])].empty:
         st.divider()
         if st.button("🏁 FINISCI SPESA E SVUOTA", type="primary", key="finish_btn"):
