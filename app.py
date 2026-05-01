@@ -14,24 +14,36 @@ if st_autorefresh:
     # Refresh ogni 30 secondi per vedere i prodotti aggiunti dagli altri in tempo reale
     st_autorefresh(interval=30000, key="datarefresh")
 
-# 2. CSS UNIFICATO (Stile originale ripristinato)
+# # 2. CSS UNIFICATO (Ottimizzato per Mobile e Integrità Layout)
 st.markdown("""
 <style>
     .stApp { margin-top: -50px; }
     .block-container { padding-top: 2rem !important; max-width: 550px !important; }
     .stTabs [data-baseweb="tab-list"] { position: sticky; top: 0; z-index: 1000; background-color: white; padding-top: 10px; }
+    
+    /* Layout Intestazione Mobile-Friendly */
+    .mobile-header-container { display: flex; align-items: baseline; gap: 8px; margin-bottom: 15px; }
+    .header-text { font-size: 24px !important; font-weight: 700; }
+    .count-text { font-size: 20px !important; color: #2e7d32; font-weight: 600; }
+
     .product-card {
         background-color: #ffffff; border-radius: 10px; padding: 12px;
-        margin-bottom: 0px; border: 1px solid #eee; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        margin-bottom: 5px; border: 1px solid #eee; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .product-header { display: flex; justify-content: space-between; align-items: center; }
     .prod-name { font-size: 18px !important; font-weight: 700; color: #111; line-height: 1.2; }
     .prod-info { font-size: 14px !important; color: #666; }
     .prod-img { width: 60px !important; height: 60px !important; object-fit: cover; border-radius: 8px; }
+    
+    /* Forza i bottoni sulla stessa riga e riduce padding */
+    [data-testid="column"] { width: 50% !important; flex: 1 1 50% !important; min-width: 50% !important; }
     div.stButton > button {
-        width: 100% !important; height: 42px !important; font-weight: bold !important;
-        border-radius: 8px !important; font-size: 15px !important; margin-top: 4px !important; margin-bottom: 15px !important;
+        width: 100% !important; height: 40px !important; font-weight: bold !important;
+        border-radius: 8px !important; font-size: 14px !important; 
+        margin-top: 0px !important; margin-bottom: 10px !important;
     }
+
+    /* Classi Bordi Originali (Preservate per coerenza) */
     .border-ortofrutta { border-left: 5px solid #2ecc71 !important; }
     .border-frigo { border-left: 5px solid #3498db !important; }
     .border-carne { border-left: 5px solid #e74c3c !important; }
