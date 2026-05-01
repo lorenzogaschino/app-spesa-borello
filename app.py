@@ -17,42 +17,22 @@ if st_autorefresh:
 # # 2. CSS UNIFICATO (Ottimizzato per Mobile e Integrità Layout)
 st.markdown("""
 <style>
-    .stApp { margin-top: -50px; }
-    .block-container { padding-top: 2rem !important; max-width: 550px !important; }
-    
-    /* Uniformità Intestazioni */
-    .mobile-header-container { display: flex; align-items: baseline; gap: 8px; margin-bottom: 15px; }
-    .header-text { font-size: 22px !important; font-weight: 700; }
-    .count-text { font-size: 18px !important; color: #2e7d32; font-weight: 600; }
+    /* ... (altre regole CSS precedenti) ... */
 
-    /* Card Prodotto */
-    .product-card {
-        background-color: #ffffff; border-radius: 10px; padding: 10px;
-        margin-bottom: 5px; border: 1px solid #eee; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .product-header { display: flex; justify-content: space-between; align-items: center; }
-    .prod-name { font-size: 16px !important; font-weight: 700; color: #111; }
-    .prod-img { width: 50px !important; height: 50px !important; object-fit: cover; border-radius: 8px; }
-
-    /* FORZATURA BOTTONI AFFIANCATI SU MOBILE */
+    /* FORZATURA BOTTONI AFFIANCATI: Impedisce il wrap delle colonne */
     [data-testid="column"] {
         flex: 1 1 0% !important;
         min-width: 0px !important;
     }
-    
+
+    /* Ottimizzazione bottoni per spazi stretti */
     div.stButton > button {
         width: 100% !important;
-        padding: 0px 5px !important;
-        height: 35px !important;
-        font-size: 12px !important; /* Testo leggermente più piccolo per stare in riga */
-        text-transform: uppercase;
+        padding: 0px 2px !important;
+        font-size: 13px !important;
+        height: 38px !important;
+        white-space: nowrap !important;
     }
-
-    /* Bordi Corsie */
-    .border-ortofrutta { border-left: 5px solid #2ecc71 !important; }
-    .border-frigo { border-left: 5px solid #3498db !important; }
-    .border-carne { border-left: 5px solid #e74c3c !important; }
-    .border-generico { border-left: 5px solid #f1c40f !important; }
 </style>
 """, unsafe_allow_html=True)
 
