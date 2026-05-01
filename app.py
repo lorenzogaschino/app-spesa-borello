@@ -141,7 +141,8 @@ with tab_lista:
         # Tasto rimuovi singolo per la lista
         if st.button("❌ RIMUOVI", key=f"L_rem_{idx}"):
             rimuovi_prodotto(idx, row)
-
+            
+# TAB 2: SPESA
 with tab_spesa:
     df_spesa = sort_df(st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy())
     
@@ -156,20 +157,21 @@ with tab_spesa:
     if df_spesa.empty:
         st.success("Tutto preso! 🎉")
     else:
-        for idx, row in df_spesa.iterrows():
+       for idx, row in df_spesa.iterrows():
             img_html = f'<img src="{row["URL_Foto"]}" class="prod-img">' if pd.notna(row.get("URL_Foto")) and str(row["URL_Foto"]).startswith("http") else ""
             st.markdown(f'''<div class="product-card {get_color_class(row["Corsia"])}"><div class="product-header">
                 <div><div class="prod-name">{row["Prodotto"]}</div><div class="prod-info">📍 {row["Corsia"]}</div></div>
                 {img_html}</div></div>''', unsafe_allow_html=True)
             
-            # Layout a due colonne per i pulsanti azione
-            col1, col2 = st.columns(2, gap="small")
+            # Layout a due colonne con gap minimo per massimizzare lo spazio orizzontale
+            col1, col2 = st.columns(2, gap="extra-small")
             with col1:
-                if st.button("✅ PRESO!", key=f"S_buy_{idx}"):
+                if st.button("✅ PRESO", key=f"S_buy_{idx}"):
                     st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
                     save_data(st.session_state.df)
                     st.rerun()
             with col2:
+                # Testo abbreviato per garantire che stia in riga su schermi molto piccoli
                 if st.button("❌ RIMUOVI", key=f"S_rem_{idx}"):
                     rimuovi_prodotto(idx, row)
 
