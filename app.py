@@ -136,14 +136,14 @@ with tab_lista:
 with tab_spesa:
     df_spesa = sort_df(st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy())
     
-    # Contatore dinamico ottimizzato per layout mobile (Sostituisce riga 141)
-count_spesa = len(df_spesa)
-st.markdown(f"""
-    <div class="mobile-header-container">
-        <span class="header-text">🛒 Al Supermercato</span>
-        <span class="count-text">({count_spesa} prodotti)</span>
-    </div>
-    """, unsafe_allow_html=True)
+# Contatore dinamico ottimizzato per layout mobile (Sostituisce riga 141)
+    count_spesa = len(df_spesa)
+    st.markdown(f"""
+        <div class="mobile-header-container">
+            <span class="header-text">🛒 Al Supermercato</span>
+            <span class="count-text">({count_spesa} prodotti)</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     if df_spesa.empty:
         st.success("Tutto preso! 🎉")
