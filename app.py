@@ -19,31 +19,36 @@ st.markdown("""
 <style>
     .stApp { margin-top: -50px; }
     .block-container { padding-top: 2rem !important; max-width: 550px !important; }
-    .stTabs [data-baseweb="tab-list"] { position: sticky; top: 0; z-index: 1000; background-color: white; padding-top: 10px; }
     
-    /* Layout Intestazione Mobile-Friendly */
+    /* Uniformità Intestazioni */
     .mobile-header-container { display: flex; align-items: baseline; gap: 8px; margin-bottom: 15px; }
-    .header-text { font-size: 24px !important; font-weight: 700; }
-    .count-text { font-size: 20px !important; color: #2e7d32; font-weight: 600; }
+    .header-text { font-size: 22px !important; font-weight: 700; }
+    .count-text { font-size: 18px !important; color: #2e7d32; font-weight: 600; }
 
+    /* Card Prodotto */
     .product-card {
-        background-color: #ffffff; border-radius: 10px; padding: 12px;
+        background-color: #ffffff; border-radius: 10px; padding: 10px;
         margin-bottom: 5px; border: 1px solid #eee; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .product-header { display: flex; justify-content: space-between; align-items: center; }
-    .prod-name { font-size: 18px !important; font-weight: 700; color: #111; line-height: 1.2; }
-    .prod-info { font-size: 14px !important; color: #666; }
-    .prod-img { width: 60px !important; height: 60px !important; object-fit: cover; border-radius: 8px; }
+    .prod-name { font-size: 16px !important; font-weight: 700; color: #111; }
+    .prod-img { width: 50px !important; height: 50px !important; object-fit: cover; border-radius: 8px; }
+
+    /* FORZATURA BOTTONI AFFIANCATI SU MOBILE */
+    [data-testid="column"] {
+        flex: 1 1 0% !important;
+        min-width: 0px !important;
+    }
     
-    /* Forza i bottoni sulla stessa riga e riduce padding */
-    [data-testid="column"] { width: 50% !important; flex: 1 1 50% !important; min-width: 50% !important; }
     div.stButton > button {
-        width: 100% !important; height: 40px !important; font-weight: bold !important;
-        border-radius: 8px !important; font-size: 14px !important; 
-        margin-top: 0px !important; margin-bottom: 10px !important;
+        width: 100% !important;
+        padding: 0px 5px !important;
+        height: 35px !important;
+        font-size: 12px !important; /* Testo leggermente più piccolo per stare in riga */
+        text-transform: uppercase;
     }
 
-    /* Classi Bordi Originali (Preservate per coerenza) */
+    /* Bordi Corsie */
     .border-ortofrutta { border-left: 5px solid #2ecc71 !important; }
     .border-frigo { border-left: 5px solid #3498db !important; }
     .border-carne { border-left: 5px solid #e74c3c !important; }
