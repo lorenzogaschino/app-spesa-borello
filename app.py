@@ -157,13 +157,24 @@ with tab_lista:
 with tab_spesa:
     df_spesa = sort_df(st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy())
     
-for idx, row in df_spesa.iterrows():
+    count_spesa = len(df_spesa)
+    st.markdown(f"""
+        <div class="mobile-header-container">
+            <span class="header-text">🛒 Al Supermercato</span>
+            <span class="count-text">({count_spesa} prodotti)</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    if df_spesa.empty:
+        st.success("Tutto preso! 🎉")
+    else:
+        for idx, row in df_spesa.iterrows():
             img_html = f'<img src="{row["URL_Foto"]}" class="prod-img">' if pd.notna(row.get("URL_Foto")) and str(row["URL_Foto"]).startswith("http") else ""
             st.markdown(f'''<div class="product-card {get_color_class(row["Corsia"])}"><div class="product-header">
                 <div><div class="prod-name">{row["Prodotto"]}</div><div class="prod-info">📍 {row["Corsia"]}</div></div>
                 {img_html}</div></div>''', unsafe_allow_html=True)
             
-            # Creazione colonne: il CSS sopra impedirà che vadano a capo
+            # Creazione colonne: il CSS esistente impedirà che vadano a capo
             c1, c2 = st.columns(2, gap="small")
             with c1:
                 if st.button("✅ PRESO", key=f"S_buy_{idx}"):
@@ -173,18 +184,8 @@ for idx, row in df_spesa.iterrows():
             with c2:
                 if st.button("❌ RIMUOVI", key=f"S_rem_{idx}"):
                     rimuovi_prodotto(idx, row)
-            
-            # Corretto: gap="small" è il valore minimo supportato da Streamlit
-            col1, col2 = st.columns(2, gap="small")
-            with col1:
-                if st.button("✅ PRESO", key=f"S_buy_{idx}"):
-                    st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
-                    save_data(st.session_state.df)
-                    st.rerun()
-            with col2:
-                if st.button("❌ RIMUOVI", key=f"S_rem_{idx}"):
-                    rimuovi_prodotto(idx, row)
 
+    # --- SEZIONE FINALE (Corretta Indentazione riga 188) ---
     if not st.session_state.df[st.session_state.df['Stato'].isin(["DA COMPRARE", "NEL CARRELLO"])].empty:
         st.divider()
         if st.button("🏁 FINISCI SPESA E SVUOTA", type="primary", key="finish_btn"):
