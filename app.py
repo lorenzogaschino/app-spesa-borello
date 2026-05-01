@@ -136,9 +136,14 @@ with tab_lista:
 with tab_spesa:
     df_spesa = sort_df(st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy())
     
-    # Contatore dinamico come da mockup image_75f760.png
-    count_spesa = len(df_spesa)
-    st.subheader(f"🛒 Al Supermercato :green[({count_spesa} prodotti)]")
+    # Contatore dinamico ottimizzato per layout mobile (Sostituisce riga 141)
+count_spesa = len(df_spesa)
+st.markdown(f"""
+    <div class="mobile-header-container">
+        <span class="header-text">🛒 Al Supermercato</span>
+        <span class="count-text">({count_spesa} prodotti)</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     if df_spesa.empty:
         st.success("Tutto preso! 🎉")
@@ -150,7 +155,7 @@ with tab_spesa:
                 {img_html}</div></div>''', unsafe_allow_html=True)
             
             # Layout a due colonne per i pulsanti azione
-            col1, col2 = st.columns(2)
+            col1, col2 = st.columns(2, gap="small")
             with col1:
                 if st.button("✅ PRESO!", key=f"S_buy_{idx}"):
                     st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
