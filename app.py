@@ -14,15 +14,13 @@ if st_autorefresh:
     # Refresh ogni 30 secondi per vedere i prodotti aggiunti dagli altri in tempo reale
     st_autorefresh(interval=10000, key="datarefresh")
 
-# # 2. CSS UNIFICATO (Ottimizzato per Mobile e Integrità Layout)
+# # 2. CSS UNIFICATO (Forzatura Definitiva Layout Orizzontale)
 st.markdown("""
 <style>
-    /* Configurazione Base della Pagina */
     .stApp { margin-top: -50px; }
     .block-container { padding-top: 2rem !important; max-width: 550px !important; }
-    .stTabs [data-baseweb="tab-list"] { position: sticky; top: 0; z-index: 1000; background-color: white; padding-top: 10px; }
     
-    /* Uniformità Intestazioni (Tab Lista e Spesa) */
+    /* Uniformità Intestazioni */
     .mobile-header-container { display: flex; align-items: baseline; gap: 8px; margin-bottom: 15px; }
     .header-text { font-size: 22px !important; font-weight: 700; color: #111; }
     .count-text { font-size: 18px !important; color: #2e7d32; font-weight: 600; }
@@ -33,27 +31,32 @@ st.markdown("""
         margin-bottom: 5px; border: 1px solid #eee; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .product-header { display: flex; justify-content: space-between; align-items: center; }
-    .prod-name { font-size: 16px !important; font-weight: 700; color: #111; line-height: 1.2; }
-    .prod-info { font-size: 14px !important; color: #666; }
+    .prod-name { font-size: 16px !important; font-weight: 700; color: #111; }
     .prod-img { width: 50px !important; height: 50px !important; object-fit: cover; border-radius: 8px; }
     
-    /* FORZATURA BOTTONI AFFIANCATI SU MOBILE (Evita il wrap a capo) */
-    [data-testid="column"] { 
-        flex: 1 1 0% !important; 
-        min-width: 0px !important; 
+    /* FORZATURA ORIZZONTALE COLONNE (Risolve il problema delle due righe) */
+    [data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 8px !important; /* Spazio tra i due bottoni */
+    }
+
+    [data-testid="column"] {
+        flex: 1 1 50% !important; /* Forza ogni colonna al 50% */
+        min-width: 0px !important;
     }
     
+    /* Stile Bottoni Compatti */
     div.stButton > button {
-        width: 100% !important; 
-        height: 38px !important; 
+        width: 100% !important;
+        height: 38px !important;
+        font-size: 11px !important; /* Ridotto leggermente per sicurezza */
         font-weight: bold !important;
-        border-radius: 8px !important; 
-        font-size: 12px !important; 
-        margin-top: 0px !important; 
-        margin-bottom: 5px !important;
-        padding: 0px 2px !important; /* Ridotto al minimo per stare in riga */
-        white-space: nowrap !important; /* Impedisce al testo del bottone di spezzarsi */
-        text-transform: uppercase;
+        padding: 0px 2px !important;
+        white-space: nowrap !important;
+        text-overflow: clip !important;
     }
 
     /* Bordi Corsie */
@@ -154,22 +157,22 @@ with tab_lista:
 with tab_spesa:
     df_spesa = sort_df(st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy())
     
-    count_spesa = len(df_spesa)
-    st.markdown(f"""
-        <div class="mobile-header-container">
-            <span class="header-text">🛒 Al Supermercato</span>
-            <span class="count-text">({count_spesa} prodotti)</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-    if df_spesa.empty:
-        st.success("Tutto preso! 🎉")
-    else:
-      for idx, row in df_spesa.iterrows():
+for idx, row in df_spesa.iterrows():
             img_html = f'<img src="{row["URL_Foto"]}" class="prod-img">' if pd.notna(row.get("URL_Foto")) and str(row["URL_Foto"]).startswith("http") else ""
             st.markdown(f'''<div class="product-card {get_color_class(row["Corsia"])}"><div class="product-header">
                 <div><div class="prod-name">{row["Prodotto"]}</div><div class="prod-info">📍 {row["Corsia"]}</div></div>
                 {img_html}</div></div>''', unsafe_allow_html=True)
+            
+            # Creazione colonne: il CSS sopra impedirà che vadano a capo
+            c1, c2 = st.columns(2, gap="small")
+            with c1:
+                if st.button("✅ PRESO", key=f"S_buy_{idx}"):
+                    st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
+                    save_data(st.session_state.df)
+                    st.rerun()
+            with c2:
+                if st.button("❌ RIMUOVI", key=f"S_rem_{idx}"):
+                    rimuovi_prodotto(idx, row)
             
             # Corretto: gap="small" è il valore minimo supportato da Streamlit
             col1, col2 = st.columns(2, gap="small")
