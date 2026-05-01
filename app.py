@@ -8,7 +8,7 @@ try:
 except ImportError:
     st_autorefresh = None
 
-st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="centered")
+st.set_page_config(page_title="Borello Smart", page_icon="icona_spesa.png", layout="centered")
 
 if st_autorefresh:
     # Refresh ogni 30 secondi per vedere i prodotti aggiunti dagli altri in tempo reale
