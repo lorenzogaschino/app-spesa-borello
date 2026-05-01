@@ -172,13 +172,17 @@ with tab_spesa:
     if df_spesa.empty:
         st.success("Tutto preso! 🎉")
     else:
-       for idx, row in df_spesa.iterrows():
-            # ... (parte markdown prodotto invariata) ...
+        for idx, row in df_spesa.iterrows():
+            # --- RIGA DA AGGIUNGERE/VERIFICARE ---
+            # Genera l'HTML dell'immagine specifico per la riga corrente
+            img_html = f'<img src="{row["URL_Foto"]}" class="prod-img">' if pd.notna(row.get("URL_Foto")) and str(row["URL_Foto"]).startswith("http") else ""
+            
+            # Rendering della card prodotto
             st.markdown(f'''<div class="product-card {get_color_class(row["Corsia"])}"><div class="product-header">
                 <div><div class="prod-name">{row["Prodotto"]}</div><div class="prod-info">📍 {row["Corsia"]}</div></div>
                 {img_html}</div></div>''', unsafe_allow_html=True)
             
-            # Creazione colonne compattate (proporzione 1:1 ma con larghezza auto nel CSS)
+            # Creazione colonne compattate
             c1, c2 = st.columns([1, 1]) 
             with c1:
                 if st.button("✅ PRESO", key=f"S_buy_{idx}"):
