@@ -12,7 +12,7 @@ st.set_page_config(page_title="Borello Smart", page_icon="🛒", layout="centere
 
 if st_autorefresh:
     # Refresh ogni 30 secondi per vedere i prodotti aggiunti dagli altri in tempo reale
-    st_autorefresh(interval=30000, key="datarefresh")
+    st_autorefresh(interval=10000, key="datarefresh")
 
 # # 2. CSS UNIFICATO (Ottimizzato per Mobile e Integrità Layout)
 st.markdown("""
@@ -109,10 +109,15 @@ tab_lista, tab_spesa, tab_catalogo = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 
 with tab_lista:
     df_lista = sort_df(st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy())
     
-    # Contatore dinamico in verde
+   # Contatore dinamico ottimizzato per layout mobile
     count_lista = len(df_lista)
-    st.subheader(f"📝 Da acquistare :green[({count_lista})]") 
-
+    st.markdown(f"""
+        <div class="mobile-header-container">
+            <span class="header-text">📝 Da acquistare</span>
+            <span class="count-text">({count_lista} prodotti)</span>
+        </div>
+        """, unsafe_allow_html=True) 
+    
     with st.expander("➕ Aggiungi prodotto non in catalogo"):
         m_nome = st.text_input("Cosa serve?", key="manual_add_name")
         m_corsia = st.selectbox("In quale corsia?", list(ORDINE_CORSIE.keys()) + ["?"], key="manual_add_corsia")
