@@ -185,10 +185,7 @@ with tab_spesa:
                     st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
                     save_data(st.session_state.df)
                     st.rerun()
-            with c2:
-                if st.button("❌ RIMUOVI", key=f"S_rem_{idx}"):
-                    rimuovi_prodotto(idx, row)
-                    
+                              
     # --- SEZIONE FINALE (Corretta Indentazione riga 188) ---
     if not st.session_state.df[st.session_state.df['Stato'].isin(["DA COMPRARE", "NEL CARRELLO"])].empty:
         st.divider()
