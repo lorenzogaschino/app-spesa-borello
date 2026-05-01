@@ -78,39 +78,56 @@ def sort_df(df):
     df['sort_idx'] = df['Corsia'].map(ORDINE_CORSIE).fillna(99)
     return df.sort_values('sort_idx').drop(columns=['sort_idx'])
 
+def rimuovi_prodotto(idx, row):
+    """Gestisce la rimozione logica (catalogo) o fisica (manuale) di un prodotto."""
+    if row['Tipo'] == "Manuale":
+        # Se è un inserimento manuale, lo eliminiamo del tutto
+        st.session_state.df = st.session_state.df.drop(idx).reset_index(drop=True)
+    else:
+        # Se è da catalogo, resettiamo solo lo stato e l'utente
+        st.session_state.df.at[idx, 'Stato'] = ""
+        st.session_state.df.at[idx, 'User'] = ""
+    save_data(st.session_state.df)
+    st.rerun()
+
 # --- TABS ---
 tab_lista, tab_spesa, tab_catalogo = st.tabs(["🏠 LISTA", "🛒 SPESA", "📦 CATALOGO"])
 
-# TAB 1: LISTA (Aggiunta Manuale ripristinata)
+# TAB 1: LISTA
 with tab_lista:
-    st.subheader("📝 Da acquistare")
+    df_lista = sort_df(st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy())
+    
+    # Contatore dinamico in verde
+    count_lista = len(df_lista)
+    st.subheader(f"📝 Da acquistare :green[({count_lista})]") 
+
     with st.expander("➕ Aggiungi prodotto non in catalogo"):
-        m_nome = st.text_input("Cosa serve?")
-        m_corsia = st.selectbox("In quale corsia?", list(ORDINE_CORSIE.keys()) + ["?"])
-        if st.button("Aggiungi ora"):
+        m_nome = st.text_input("Cosa serve?", key="manual_add_name")
+        m_corsia = st.selectbox("In quale corsia?", list(ORDINE_CORSIE.keys()) + ["?"], key="manual_add_corsia")
+        if st.button("Aggiungi ora", key="manual_add_btn"):
             new_row = pd.DataFrame([{"Prodotto": m_nome, "Corsia": m_corsia, "Stato": "DA COMPRARE", "Tipo": "Manuale", "User": utente_attuale}])
             save_data(pd.concat([st.session_state.df, new_row], ignore_index=True))
             st.rerun()
 
     st.divider()
-    df_lista = sort_df(st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy())
     for idx, row in df_lista.iterrows():
         img_html = f'<img src="{row["URL_Foto"]}" class="prod-img">' if pd.notna(row.get("URL_Foto")) and str(row["URL_Foto"]).startswith("http") else ""
         st.markdown(f'''<div class="product-card {get_color_class(row["Corsia"])}"><div class="product-header">
             <div><div class="prod-name">{row["Prodotto"]}</div><div class="prod-info">📍 {row["Corsia"]}</div></div>
             {img_html}</div></div>''', unsafe_allow_html=True)
+        
+        # Tasto rimuovi singolo per la lista
         if st.button("❌ RIMUOVI", key=f"L_rem_{idx}"):
-            if row['Tipo'] == "Manuale":
-                st.session_state.df = st.session_state.df.drop(idx).reset_index(drop=True)
-            else:
-                st.session_state.df.at[idx, 'Stato'] = ""
-            save_data(st.session_state.df)
-            st.rerun()
+            rimuovi_prodotto(idx, row)
 
 # TAB 2: SPESA
 with tab_spesa:
-    st.subheader("🛒 Al Supermercato")
     df_spesa = sort_df(st.session_state.df[st.session_state.df['Stato'] == "DA COMPRARE"].copy())
+    
+    # Contatore dinamico come da mockup image_75f760.png
+    count_spesa = len(df_spesa)
+    st.subheader(f"🛒 Al Supermercato :green[({count_spesa} prodotti)]")
+
     if df_spesa.empty:
         st.success("Tutto preso! 🎉")
     else:
@@ -119,14 +136,22 @@ with tab_spesa:
             st.markdown(f'''<div class="product-card {get_color_class(row["Corsia"])}"><div class="product-header">
                 <div><div class="prod-name">{row["Prodotto"]}</div><div class="prod-info">📍 {row["Corsia"]}</div></div>
                 {img_html}</div></div>''', unsafe_allow_html=True)
-            if st.button("✅ PRESO!", key=f"S_buy_{idx}"):
-                st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
-                save_data(st.session_state.df)
-                st.rerun()
+            
+            # Layout a due colonne per i pulsanti azione
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("✅ PRESO!", key=f"S_buy_{idx}"):
+                    st.session_state.df.at[idx, 'Stato'] = "NEL CARRELLO"
+                    save_data(st.session_state.df)
+                    st.rerun()
+            with col2:
+                if st.button("❌ RIMUOVI", key=f"S_rem_{idx}"):
+                    rimuovi_prodotto(idx, row)
 
+    # Bottone di chiusura spesa
     if not st.session_state.df[st.session_state.df['Stato'].isin(["DA COMPRARE", "NEL CARRELLO"])].empty:
         st.divider()
-        if st.button("🏁 FINISCI SPESA E SVUOTA", type="primary"):
+        if st.button("🏁 FINISCI SPESA E SVUOTA", type="primary", key="finish_btn"):
             st.session_state.df.loc[st.session_state.df['Stato'].isin(["DA COMPRARE", "NEL CARRELLO"]), 'Stato'] = ""
             st.session_state.df = st.session_state.df[st.session_state.df['Tipo'] != "Manuale"].reset_index(drop=True)
             save_data(st.session_state.df)
